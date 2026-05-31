@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CFA 財務儀表板</title>
+    
+    <!-- PWA 專屬設定 -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#f8fafc">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        
+        .glass-card { 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05); 
+            padding: 1.5rem; 
+            transition: all 0.3s ease;
+            page-break-inside: avoid; 
+            break-inside: avoid;
+        }
+        .glass-card:hover { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+
+        input[type="file"] { display: none; }
+        .upload-btn { cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; background: #4f46e5; color: white; padding: 0.5rem 1rem; border-radius: 9999px; font-weight: 500; font-size: 0.875rem; transition: background 0.2s; }
+        .upload-btn:hover { background: #4338ca; }
+        
+        .pdf-btn { cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; background: #f43f5e; color: white; padding: 0.5rem 1rem; border-radius: 9999px; font-weight: 500; font-size: 0.875rem; transition: background 0.2s; }
+        .pdf-btn:hover { background: #e11d48; }
+
+        .ai-btn { cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #8b5cf6, #d946ef); color: white; padding: 0.5rem 1rem; border-radius: 9999px; font-weight: 500; font-size: 0.875rem; transition: opacity 0.2s, transform 0.2s; }
+        .ai-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+        .ai-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(50%); }
+
+        .heatmap-table { border-collapse: separate; border-spacing: 4px; width: 100%; table-layout: fixed; }
+        .heatmap-cell { height: 40px; border-radius: 4px; text-align: center; font-size: 11px; font-weight: bold; transition: transform 0.2s; }
+        .heatmap-cell:hover { transform: scale(1.1); z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .heatmap-label { font-size: 12px; color: #64748b; text-align: center; padding: 4px 0; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 50; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-content { background: white; border-radius: 16px; width: 90%; max-width: 700px; max-height: 85vh; overflow-y: auto; padding: 2rem; transform: translateY(20px); transition: transform 0.3s ease; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+        .ai-markdown b, .ai-markdown strong { color: #4f46e5; }
+        .ai-markdown h2, .ai-markdown h3 { font-size: 1.25rem; font-weight: bold; color: #1e293b; margin-top: 1.5rem; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0; }
+        .ai-markdown p { margin-bottom: 1rem; line-height: 1.6; color: #475569; }
+        .ai-markdown ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: #475569; }
+        .ai-markdown li { margin-bottom: 0.5rem; }
+
+        /* 表格排序專用樣式 */
+        .sortable-th { cursor: pointer; user-select: none; transition: background-color 0.2s; }
+        .sortable-th:hover { background-color: #f1f5f9; }
+        .sort-icon { display: inline-block; width: 14px; height: 14px; opacity: 0.3; transition: opacity 0.2s, color 0.2s; }
+        .sortable-th.active .sort-icon { opacity: 1; color: #4f46e5; }
+    </style>
+</head>
+<body class="text-slate-800 transition-all duration-300 relative">
+    <div id="dashboard-content" class="max-w-7xl mx-auto px-4 py-8 bg-slate-50 transition-all duration-300">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="layout-dashboard" class="text-indigo-600"></i>
+                    個人財務儀表板 <span class="text-sm bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full ml-2 hidden md:inline-block">V2.3.0 PWA快取版</span>
+                </h1>
+                <p class="text-slate-500 mt-1">更新日期：<span id="valUpdateDate">請上傳 Excel 檔案</span> | 追蹤檔數：<span id="valHoldingsCount">--</span> 檔</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3" data-html2canvas-ignore="true">
+                <span id="statusTag" class="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-sm font-medium flex items-center gap-1">
+                    <i data-lucide="info" class="w-4 h-4"></i> 等待上傳...
+                </span>
+                
+                <!-- 新增：清除本地快取按鈕 -->
+                <button id="btnClearCache" class="px-3 py-1 bg-rose-50 border border-rose-200 text-rose-600 rounded-full text-sm font-medium flex items-center gap-1 hover:bg-rose-100 transition-colors shadow-sm hidden" title="清除本機記憶資料">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i> 清除暫存
+                </button>
+
+                <button id="btnApiKeyConfig" class="px-3 py-1 bg-white border border-slate-200 text-slate-600 rounded-full text-sm font-medium flex items-center gap-1 hover:bg-slate-50 transition-colors shadow-sm" title="設定AI金鑰">
+                    <i data-lucide="key" class="w-4 h-4"></i>
+                </button>
+
+                <button id="btnAiDiagnosis" class="ai-btn shadow-sm" disabled><i data-lucide="sparkles" class="w-4 h-4"></i> AI 診斷</button>
+                <label class="upload-btn shadow-sm"><i data-lucide="upload-cloud" class="w-4 h-4"></i> 上傳 <input type="file" id="fileUpload" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"></label>
+                <button id="btnExportPdf" class="pdf-btn shadow-sm hidden md:inline-flex"><i data-lucide="file-down" class="w-4 h-4"></i> 匯出 PDF</button>
+            </div>
+        </header>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-semibold mb-4 flex items-center gap-2 border-b pb-2"><i data-lucide="globe" class="text-indigo-500 w-5 h-5"></i> 核心戰情區 (Macro Overview)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="glass-card border-l-4 border-indigo-500">
+                    <p class="text-sm text-slate-500 mb-1">累計總資產</p>
+                    <h3 id="valTotalAsset" class="text-2xl font-bold text-slate-900">NT$ 0</h3>
+                    <div class="mt-2 text-sm flex justify-between"><span class="text-slate-500">總成本</span><span id="valTotalCost" class="font-medium">0</span></div>
+                    <div class="mt-1 text-sm flex justify-between"><span class="text-slate-500">總負債</span><span id="valTotalDebtMacro" class="font-medium text-emerald-500">0</span></div>
+                </div>
+                <div class="glass-card border-l-4 border-slate-300" id="cardAccumulated">
+                    <p class="text-sm text-slate-500 mb-1">累積報酬 (全期)</p>
+                    <h3 id="valAccumulatedProfit" class="text-2xl font-bold text-slate-600">NT$ 0</h3>
+                    <div class="mt-2 text-sm flex justify-between"><span class="text-slate-500">累積報酬率</span><span id="valAccumulatedRate" class="font-medium text-slate-600">0.00%</span></div>
+                    <div class="mt-1 text-sm flex justify-between"><span id="labelCagr" class="text-slate-500">年化報酬率</span><span id="valCagr" class="font-medium text-slate-600">未計算</span></div>
+                </div>
+                <div class="glass-card border-l-4 border-blue-500">
+                    <p class="text-sm text-slate-500 mb-1">今年以來績效 (YTD)</p>
+                    <h3 id="valYtdProfit" class="text-2xl font-bold text-slate-600">NT$ --</h3>
+                    <div class="mt-2 text-sm flex justify-between"><span class="text-slate-500">今年期初資產</span><span id="valYtdBase" class="font-medium">--</span></div>
+                    <div class="mt-1 text-sm flex justify-between"><span class="text-slate-500">今年報酬率</span><span id="valYtdRate" class="font-medium text-slate-600">--%</span></div>
+                </div>
+                <div class="glass-card flex flex-col items-center">
+                    <p class="text-sm text-slate-500 mb-2 self-start">資產配置 (Allocation)</p>
+                    <div class="h-32 w-full relative"><canvas id="assetAllocationChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+                <div id="cardFireProgress" class="glass-card border-2 border-indigo-50 flex flex-col items-center justify-center lg:col-span-1">
+                    <div class="w-full flex items-center gap-3 mb-2">
+                        <div class="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><i data-lucide="flame" class="w-5 h-5"></i></div>
+                        <h3 class="font-bold text-slate-800 text-sm">FIRE 達成度</h3>
+                    </div>
+                    <div class="relative h-28 w-full flex justify-center mt-1">
+                        <canvas id="gaugeFire"></canvas>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pt-2">
+                            <span id="valFireRate" class="font-black text-2xl text-indigo-600">--%</span>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-center w-full">
+                        <p class="text-[11px] text-slate-500 cursor-pointer hover:text-indigo-600 flex justify-center items-center gap-1 transition-colors" id="btnEditFireTarget" title="點擊修改目標金額">
+                            目標：<span id="valFireTarget">3,000</span> 萬 <i data-lucide="edit-2" class="w-3 h-3 inline"></i>
+                        </p>
+                        <p class="text-[11px] text-slate-400 mt-1 font-medium" id="valFireYears">預期達標：-- 年</p>
+                    </div>
+                </div>
+                <div class="glass-card flex flex-col justify-center lg:col-span-3 overflow-hidden">
+                    <h3 class="font-medium text-slate-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="grid" class="w-4 h-4 text-emerald-500"></i> 月度純報酬率熱力圖 (MoM Heatmap)
+                    </h3>
+                    <div class="overflow-x-auto pb-2">
+                        <div id="heatmapContainer"><p class="text-sm text-slate-400 py-4 text-center">尚無資料，請上傳 Excel 檔案</p></div>
+                    </div>
+                    <div class="mt-4 flex items-center justify-between text-[10px] text-slate-400">
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> 負報酬</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span> 正報酬</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="html2pdf__page-break"></div>
+
+            <div class="grid grid-cols-1 gap-6 mb-6">
+                <div class="glass-card overflow-hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-medium text-slate-800">資產累積趨勢圖</h3>
+                        <select id="timeframeSelect" class="text-sm border rounded px-2 py-1 text-slate-600 bg-slate-50" data-html2canvas-ignore="true">
+                            <option value="monthly">按月顯示</option>
+                            <option value="quarterly">按季顯示</option>
+                            <option value="yearly">按年顯示</option>
+                            <option value="ytd">今年起顯示 (YTD)</option>
+                        </select>
+                    </div>
+                    <div class="h-64 w-full relative"><canvas id="assetTrendChart"></canvas></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-semibold mb-4 flex items-center gap-2 border-b pb-2"><i data-lucide="shield-alert" class="text-rose-500 w-5 h-5"></i> 風險與流動性控管區 (Risk & Liquidity)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div id="cardCashAlert" class="glass-card flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <div id="iconCashAlert" class="p-2 bg-slate-100 text-slate-600 rounded-lg"><i data-lucide="siren" class="w-6 h-6"></i></div>
+                            <div>
+                                <h3 class="font-bold text-slate-800">現金安全水位</h3>
+                                <span id="badgeCashAlert" class="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded inline-block mt-0.5">未計算</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex justify-between items-end mb-2 text-sm"><span class="text-slate-600">當前額度：<span id="valCashAmount" class="font-bold text-lg">-- 萬</span></span><span class="text-slate-500">目標：60 萬</span></div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5"><div id="barCashAlert" class="bg-slate-400 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div></div>
+                    </div>
+                </div>
+
+                <div id="cardCurrentRatio" class="glass-card flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <div id="iconCurrentRatio" class="p-2 bg-slate-100 text-slate-600 rounded-lg"><i data-lucide="droplets" class="w-6 h-6"></i></div>
+                            <div>
+                                <h3 class="font-bold text-slate-800">短期償債能力</h3>
+                                <span id="badgeCurrentRatio" class="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded inline-block mt-0.5">未計算</span>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-1">現金+債券 / 流動負債</p>
+                    </div>
+                    <div class="mt-2 relative h-28 w-full flex justify-center">
+                        <canvas id="gaugeCurrentRatio"></canvas>
+                        <div class="absolute bottom-0 w-full flex flex-col items-center justify-end pb-1"><span id="valCurrentRatio" class="font-bold text-3xl text-slate-400 transition-colors duration-300">--%</span><span class="text-[11px] text-slate-500 font-medium">健康值 > 300%</span></div>
+                    </div>
+                </div>
+
+                <div id="cardDebtRatio" class="glass-card flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <div id="iconDebtRatio" class="p-2 bg-slate-100 text-slate-600 rounded-lg"><i data-lucide="scale" class="w-6 h-6"></i></div>
+                            <div>
+                                <h3 class="font-bold text-slate-800">長期風險(負債比率)</h3>
+                                <span id="badgeDebtRatio" class="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded inline-block mt-0.5">未計算</span>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-1">總負債 / 總資產</p>
+                    </div>
+                    <div class="mt-2 relative h-28 w-full flex justify-center">
+                        <canvas id="gaugeDebtRatio"></canvas>
+                        <div class="absolute bottom-0 w-full flex flex-col items-center justify-end pb-1"><span id="valDebtRatio" class="font-bold text-3xl text-slate-400 transition-colors duration-300">--%</span><span class="text-[11px] text-slate-500 font-medium">健康值 20%~50%</span></div>
+                    </div>
+                </div>
+
+                <div id="cardLeverageAlert" class="glass-card flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <div id="iconLeverageAlert" class="p-2 bg-slate-100 text-slate-600 rounded-lg"><i data-lucide="zap" class="w-6 h-6"></i></div>
+                            <div>
+                                <h3 class="font-bold text-slate-800">槓桿曝險佔比</h3>
+                                <span id="badgeLeverageAlert" class="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded inline-block mt-0.5">未計算</span>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-1">正2佔總資產: <span id="valLeverageRatio" class="font-medium">--%</span> (<span id="valLeverageAmount">-- 萬</span>)</p>
+                    </div>
+                    <div class="mt-2 relative h-28 w-full flex justify-center">
+                        <canvas id="gaugeLeverageRatio"></canvas>
+                        <div class="absolute bottom-0 w-full flex flex-col items-center justify-end pb-1"><span id="valLevToSafeRatio" class="font-bold text-3xl text-slate-400 transition-colors duration-300">--%</span><span class="text-[11px] text-slate-500 font-medium">健康 &lt; 100%</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+                <div class="glass-card bg-slate-50 flex flex-col xl:col-span-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><i data-lucide="target" class="w-6 h-6"></i></div>
+                            <h3 class="font-bold text-slate-800">前十大持股集中度</h3>
+                        </div>
+                        <button id="btnOpenLedger" class="text-xs font-bold flex items-center gap-1 bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full hover:bg-indigo-200 transition-colors shadow-sm disabled:opacity-50" disabled>
+                            <i data-lucide="table-2" class="w-4 h-4"></i> <span class="hidden sm:inline">檢視完整總帳表</span><span class="sm:hidden">明細</span>
+                        </button>
+                    </div>
+                    <div class="flex flex-col md:flex-row items-center gap-6 flex-1">
+                        <div class="w-full md:w-1/3 h-48 relative"><canvas id="topHoldingsChart"></canvas></div>
+                        <div class="w-full md:w-2/3 overflow-y-auto max-h-48 pr-2" id="listTopHoldings">
+                            <p class="text-center text-slate-400 w-full">尚無資料，請上傳 Excel 檔案</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card bg-slate-50 flex flex-col xl:col-span-1">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><i data-lucide="search" class="w-6 h-6"></i></div>
+                        <h3 class="font-bold text-slate-800">標的放大鏡</h3>
+                    </div>
+                    <div class="mb-4">
+                        <select id="inspectStockSelect" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white">
+                            <option value="">請先上傳檔案...</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 text-center flex-1 content-center">
+                        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-center">
+                            <p class="text-[11px] text-slate-500 mb-1">總股數</p>
+                            <p id="insShares" class="font-bold text-slate-800">--</p>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-center">
+                            <p class="text-[11px] text-slate-500 mb-1">持有均價</p>
+                            <p id="insAvgPrice" class="font-bold text-slate-800">--</p>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-center">
+                            <p class="text-[11px] text-slate-500 mb-1">總市值 (萬)</p>
+                            <p id="insMarketVal" class="font-bold text-slate-800">--</p>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-center">
+                            <p class="text-[11px] text-slate-500 mb-1">累積報酬率</p>
+                            <p id="insRoi" class="font-bold text-slate-800">--</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="html2pdf__page-break"></div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-10 gap-6 mb-8">
+            <section class="lg:col-span-4 glass-card overflow-hidden">
+                <h2 class="text-xl font-semibold mb-4 flex items-center gap-2 border-b pb-2"><i data-lucide="bar-chart-2" class="text-emerald-500 w-5 h-5"></i> 績效與策略模塊</h2>
+                <div class="h-72 w-full relative flex flex-col justify-center items-center">
+                    <canvas id="strategyChart"></canvas>
+                </div>
+            </section>
+            
+            <section class="lg:col-span-6 glass-card overflow-hidden">
+                <h2 class="text-xl font-semibold mb-4 flex items-center gap-2 border-b pb-2"><i data-lucide="wallet" class="text-blue-500 w-5 h-5"></i> 後勤與外匯區 (Logistics & FX)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 h-72">
+                    <div class="flex flex-col justify-center items-center h-full w-full relative">
+                        <canvas id="fxChart"></canvas>
+                    </div>
+                    <div class="flex flex-col justify-center items-center h-full w-full relative">
+                        <canvas id="accountChart"></canvas>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- AI Modal -->
+    <div id="aiModal" class="modal-overlay" data-html2canvas-ignore="true">
+        <div class="modal-content relative w-[95vw] md:w-[90%] md:max-w-3xl !p-5 md:!p-8">
+            <button id="btnCloseModal" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <div class="flex items-center gap-3 mb-6"><div class="p-3 bg-purple-100 text-purple-600 rounded-xl"><i data-lucide="bot" class="w-8 h-8"></i></div><div><h2 class="text-2xl font-bold text-slate-900">✨ AI 專屬財管顧問</h2><p class="text-slate-500 text-sm">由 Gemini 提供深度財務體質分析</p></div></div>
+            <div id="aiLoading" class="hidden flex-col items-center justify-center py-12"><i data-lucide="loader" class="w-10 h-10 text-purple-500 animate-spin mb-4"></i><p class="text-slate-600 font-medium animate-pulse">正在精算風控指標，擬定專屬策略中...</p></div>
+            <div id="aiResult" class="ai-markdown hidden"></div>
+        </div>
+    </div>
+
+    <!-- API Key Modal -->
+    <div id="apiKeyModal" class="modal-overlay" data-html2canvas-ignore="true">
+        <div class="modal-content relative !max-w-md !p-6">
+            <button id="btnCloseApiKeyModal" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <div class="flex items-center gap-3 mb-4">
+                <div class="p-3 bg-slate-100 text-slate-600 rounded-xl"><i data-lucide="key" class="w-6 h-6"></i></div>
+                <h2 class="text-xl font-bold text-slate-900">設定 Gemini API Key</h2>
+            </div>
+            <p class="text-sm text-slate-500 mb-4">請輸入您的 Google Gemini API Key 以啟用 AI 顧問功能。此金鑰僅會安全地儲存於您的本地設備，不外流。</p>
+            <input type="password" id="inputApiKey" class="w-full border border-slate-300 rounded-lg px-4 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="AIzaSy...">
+            <div class="flex justify-end gap-3">
+                <button id="btnClearApiKey" class="px-4 py-2 text-sm text-rose-600 bg-rose-50 rounded-lg hover:bg-rose-100 transition-colors">清除金鑰</button>
+                <button id="btnSaveApiKey" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">安全儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ledger Modal -->
+    <div id="ledgerModal" class="modal-overlay" data-html2canvas-ignore="true">
+        <div class="modal-content relative !max-w-[98vw] xl:!max-w-[1400px] !p-4 md:!p-8 !max-h-[90vh]">
+            <button id="btnCloseLedger" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <div class="flex items-center gap-3 mb-4 md:mb-6">
+                <div class="p-2 md:p-3 bg-indigo-100 text-indigo-600 rounded-xl"><i data-lucide="table-2" class="w-5 h-5 md:w-6 md:h-6"></i></div>
+                <div>
+                    <h2 class="text-lg md:text-2xl font-bold text-slate-900">持股明細總帳表</h2>
+                    <p class="text-slate-500 text-xs md:text-sm">Consolidated Ledger (依標的自動加權合併)</p>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto rounded-lg border border-slate-200 shadow-sm max-h-[65vh]">
+                <table class="w-full text-sm text-left whitespace-nowrap min-w-[800px]">
+                    <thead class="text-xs text-slate-600 bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
+                        <tr>
+                            <th class="py-3 px-4 font-semibold sortable-th" data-sort="name">
+                                <div class="flex items-center gap-1">標的名稱 <i data-lucide="arrow-up-down" class="sort-icon"></i></div>
+                            </th>
+                            <th class="py-3 px-4 font-semibold text-right sortable-th" data-sort="shares">
+                                <div class="flex items-center justify-end gap-1">總股數 <i data-lucide="arrow-up-down" class="sort-icon"></i></div>
+                            </th>
+                            <th class="py-3 px-4 font-semibold text-right sortable-th" data-sort="avgPrice">
+                                <div class="flex items-center justify-end gap-1">持有均價 <i data-lucide="arrow-up-down" class="sort-icon"></i></div>
+                            </th>
+                            <th class="py-3 px-4 font-semibold text-right sortable-th" data-sort="currentPrice">
+                                <div class="flex items-center justify-end gap-1">現價 <i data-lucide="arrow-up-down" class="sort-icon"></i></div>
+                            </th>
+                            <th class="py-3 px-4 font-semibold text-right sortable-th" data-sort="cost">
+                                <div class="flex items-center justify-end gap-1">總成本 <i data-lucide="arrow-up-down" class="sort-icon"></i></div>
+                            </th>
+                            <th class="py-3 px-4 font-semibold text-right sortable-th active" data-sort="marketVal" data-dir="desc">
+                                <div class="flex items-center justify-end gap-1">總市值 <i data-lucide="arrow-down" class="sort-icon"></i></div>
+                            </th>
+                            <th class="py-3 px-4 font-semibold text-right sortable-th" data-sort="profit">
+                                <div class="flex items-center justify-end gap-1">累積損益 <i data-lucide="arrow-up-down" class="sort-icon"></i></div>
+                            </th>
+                            <th class="py-3 px-4 font-semibold text-right sortable-th" data-sort="roi">
+                                <div class="flex items-center justify-end gap-1">報酬率 <i data-lucide="arrow-up-down" class="sort-icon"></i></div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="ledgerTableBody" class="divide-y divide-slate-100 bg-white">
+                        <tr><td colspan="8" class="text-center py-8 text-slate-400">尚無資料，請先上傳 Excel 檔案</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PWA Service Worker 註冊 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then(registration => {
+                    console.log('SW registered: ', registration);
+                }).catch(registrationError => {
+                    console.log('SW registration failed: ', registrationError);
+                });
+            });
+        }
+    </script>
+
+    <script>
+        lucide.createIcons();
+
+        Chart.register(ChartDataLabels);
+        Chart.defaults.plugins.datalabels = { display: false };
+        Chart.defaults.font.family = "'PingFang TC', 'Microsoft JhengHei', sans-serif";
+        Chart.defaults.color = '#64748b';
+        
+        const pieLinePlugin = {
+            id: 'pieLinePlugin',
+            afterDraw(chart) {
+                if (chart.canvas.id !== 'assetAllocationChart') return;
+                const ctx = chart.ctx;
+                const dataset = chart.data.datasets[0];
+                const meta = chart.getDatasetMeta(0);
+                let sum = dataset.data.reduce((a, b) => a + b, 0);
+                if (sum === 0) return;
+
+                meta.data.forEach((arc, index) => {
+                    const value = dataset.data[index];
+                    if (value === 0) return;
+                    const percentage = (value * 100 / sum);
+
+                    if (percentage >= 1 && percentage < 3) {
+                        const midAngle = (arc.startAngle + arc.endAngle) / 2;
+                        const xCenter = arc.x;
+                        const yCenter = arc.y;
+                        const outerRadius = arc.outerRadius;
+
+                        const startX = xCenter + Math.cos(midAngle) * outerRadius;
+                        const startY = yCenter + Math.sin(midAngle) * outerRadius;
+                        const endX = xCenter + Math.cos(midAngle) * (outerRadius + 8);
+                        const endY = yCenter + Math.sin(midAngle) * (outerRadius + 8);
+                        
+                        const sign = Math.cos(midAngle) >= 0 ? 1 : -1;
+                        const finalX = endX + (3 * sign);
+                        const finalY = endY;
+
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.moveTo(startX, startY);
+                        ctx.lineTo(endX, endY);
+                        ctx.lineTo(finalX, finalY);
+                        ctx.strokeStyle = dataset.backgroundColor[index];
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+
+                        const text = percentage.toFixed(1) + "%";
+                        ctx.font = 'bold 10px "PingFang TC", "Microsoft JhengHei", sans-serif';
+                        ctx.textBaseline = 'middle';
+                        ctx.textAlign = sign > 0 ? 'left' : 'right';
+                        
+                        const textX = finalX + (2 * sign);
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 3;
+                        ctx.lineJoin = 'round';
+                        ctx.strokeText(text, textX, finalY);
+                        ctx.fillStyle = '#0f172a'; 
+                        ctx.fillText(text, textX, finalY);
+                        ctx.restore();
+                    }
+                });
+            }
+        };
+        Chart.register(pieLinePlugin);
+        
+        let globalTotalDebt = 0; 
+        let globalCurrentLiabilities = 0;
+        let globalInvestYears = 1;
+        let globalYtdBase = 14881502;
+        let globalFireTarget = 30000000;
+        
+        let charts = {};
+        let portfolioSnapshot = { totalAsset: 0, totalDebt: 0, currentLiabilities: 0, cash: 0, bond: 0, stock: 0, gold: 0, leverageAsset: 0, ytdRate: 0, cagr: 0, topHoldingsNames: [] };
+        let globalTrendData = { labels: [], values: [], fundA: [], fundB: [] };
+        let macroData = { S7: null, S9: null, S10: null, S11: null, S12: null, S13: null, S14: null, S15: null, F63: null, S17: null };
+        let heatmapData = {};
+        let assetHistory = {}; 
+        let globalExtractedYr = "114";
+        
+        window.globalHoldingsList = [];
+        window.consolidatedHoldings = [];
+        window.ledgerSortCol = 'marketVal';
+        window.ledgerSortDir = 'desc';
+
+        const topHoldingsColors = ['#4f46e5', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981', '#84cc16', '#eab308', '#f97316', '#ec4899', '#cbd5e1'];
+        const fmtNum = (num) => new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 0 }).format(num || 0);
+        const fmtPct = (num) => (num * 100).toFixed(2) + '%'; 
+        const parseNum = (val) => parseFloat(String(val).replace(/,/g, '')) || 0;
+        
+        const parsePct = (val) => {
+            if (val === undefined || val === null || val === '') return undefined;
+            if (typeof val === 'number') return val; 
+            if (typeof val === 'string') {
+                let str = val.trim();
+                let isNegative = str.includes('(') || str.includes('-');
+                let p = parseFloat(str.replace(/[^0-9.]/g, ''));
+                if (!isNaN(p)) {
+                    let result = str.includes('%') ? p / 100 : p;
+                    return isNegative ? -result : result;
+                }
+            }
+            return undefined;
+        };
+
+        function getCellVal(sheet, cell, isPct = false) {
+            const c = sheet[cell];
+            if (!c || c.v === undefined) return null;
+            if (typeof c.w === 'string' && c.w.includes('%')) { return parseFloat(c.w.replace(/[^0-9.-]/g, '')) / 100; }
+            let v = typeof c.v === 'string' ? parseNum(c.v) : c.v;
+            return v;
+        }
+
+        // Base64 轉換工具 (用於將 Excel 快取在本地)
+        function arrayBufferToBase64(buffer) {
+            let binary = '';
+            let bytes = new Uint8Array(buffer);
+            let len = bytes.byteLength;
+            for (let i = 0; i < len; i++) { binary += String.fromCharCode(bytes[i]); }
+            return window.btoa(binary);
+        }
+
+        function base64ToArrayBuffer(base64) {
+            let binary_string = window.atob(base64);
+            let len = binary_string.length;
+            let bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) { bytes[i] = binary_string.charCodeAt(i); }
+            return bytes.buffer;
+        }
+
+        function initCharts() {
+            const datalabelsAllocation = {
+                display: true,
+                formatter: (value, ctx) => {
+                    let sum = 0;
+                    ctx.chart.data.datasets[0].data.forEach(data => { sum += data; });
+                    if(sum === 0 || value === 0) return null; 
+                    let percentage = (value * 100 / sum);
+                    if (percentage < 1) return null;
+                    return percentage.toFixed(1) + "%";
+                },
+                color: (ctx) => {
+                    let value = ctx.dataset.data[ctx.dataIndex];
+                    let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                    return (value * 100 / sum) < 3 ? '#0f172a' : '#fff';
+                },
+                textStrokeColor: (ctx) => {
+                    let value = ctx.dataset.data[ctx.dataIndex];
+                    let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                    return (value * 100 / sum) < 3 ? '#ffffff' : 'transparent';
+                },
+                textStrokeWidth: (ctx) => {
+                    let value = ctx.dataset.data[ctx.dataIndex];
+                    let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                    return (value * 100 / sum) < 3 ? 3 : 0;
+                },
+                anchor: (ctx) => {
+                    let value = ctx.dataset.data[ctx.dataIndex];
+                    let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                    return (value * 100 / sum) < 3 ? 'end' : 'center';
+                },
+                align: (ctx) => {
+                    let value = ctx.dataset.data[ctx.dataIndex];
+                    let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                    return (value * 100 / sum) < 3 ? 'end' : 'center';
+                },
+                offset: (ctx) => {
+                    let value = ctx.dataset.data[ctx.dataIndex];
+                    let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                    return (value * 100 / sum) < 3 ? 12 : 0;
+                },
+                font: { weight: 'bold', size: 10 },
+                textShadowBlur: (ctx) => {
+                    let value = ctx.dataset.data[ctx.dataIndex];
+                    let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                    return (value * 100 / sum) < 3 ? 0 : 4;
+                },
+                textShadowColor: (ctx) => {
+                    let value = ctx.dataset.data[ctx.dataIndex];
+                    let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                    return (value * 100 / sum) < 3 ? 'transparent' : 'rgba(0,0,0,0.5)';
+                }
+            };
+
+            const datalabelsInt = {
+                display: true,
+                formatter: (value, ctx) => {
+                    let sum = 0;
+                    ctx.chart.data.datasets[0].data.forEach(data => { sum += data; });
+                    if(sum === 0 || value === 0) return null; 
+                    let percentage = (value * 100 / sum);
+                    return Math.round(percentage) + "%";
+                },
+                color: '#fff',
+                font: { weight: 'bold', size: 10 },
+                textShadowBlur: 4,
+                textShadowColor: 'rgba(0,0,0,0.5)'
+            };
+
+            const tooltipFormat = {
+                callbacks: {
+                    label: function(context) {
+                        return context.label + ': NT$ ' + new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 0 }).format(context.raw);
+                    }
+                }
+            };
+
+            const gaugeConfig = { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                rotation: -90, 
+                circumference: 180, 
+                cutout: '80%', 
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                animation: { duration: 0 }
+            };
+            
+            charts.allocation = new Chart(document.getElementById('assetAllocationChart').getContext('2d'), { 
+                type: 'doughnut', 
+                data: { labels: [], datasets: [{ data: [] }] }, 
+                options: { 
+                    maintainAspectRatio: false, 
+                    cutout: '55%', 
+                    layout: { padding: { top: 10, bottom: 10, left: 16, right: 30 } }, 
+                    plugins: { 
+                        datalabels: datalabelsAllocation, 
+                        tooltip: tooltipFormat, 
+                        legend: { position: 'right', labels: { boxWidth: 8, padding: 8, font: { size: 10 } } } 
+                    } 
+                } 
+            });
+            charts.trend = new Chart(document.getElementById('assetTrendChart').getContext('2d'), { 
+                type: 'line', 
+                data: { 
+                    labels: [], 
+                    datasets: [
+                        { label: '總資產 (萬)', data: [], borderColor: '#6366f1', fill: true, tension: 0.4, yAxisID: 'y' }, 
+                        { label: '大盤對照', data: [], borderColor: '#cbd5e1', borderDash: [5, 5], fill: false, tension: 0.4, yAxisID: 'y' },
+                        { label: '駿利平衡基金', data: [], borderColor: '#f59e0b', fill: false, tension: 0.4, yAxisID: 'y1', spanGaps: true },
+                        { label: '0050 ETF', data: [], borderColor: '#10b981', fill: false, tension: 0.4, yAxisID: 'y1', spanGaps: true }
+                    ] 
+                }, 
+                options: { 
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { type: 'linear', display: true, position: 'left' },
+                        y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false } }
+                    }
+                } 
+            });
+            charts.strategy = new Chart(document.getElementById('strategyChart').getContext('2d'), { type: 'bar', data: { labels: [], datasets: [{ data: [] }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            charts.fx = new Chart(document.getElementById('fxChart').getContext('2d'), { type: 'pie', data: { labels: [], datasets: [{ data: [] }] }, options: { maintainAspectRatio: false, title: { display: true, text: '幣別' }, plugins: { datalabels: datalabelsInt, tooltip: tooltipFormat, legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } } });
+            charts.account = new Chart(document.getElementById('accountChart').getContext('2d'), { type: 'pie', data: { labels: [], datasets: [{ data: [] }] }, options: { maintainAspectRatio: false, plugins: { datalabels: datalabelsInt, tooltip: tooltipFormat, legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } } });
+            charts.topHoldings = new Chart(document.getElementById('topHoldingsChart').getContext('2d'), { type: 'pie', data: { labels: [], datasets: [{ data: [], backgroundColor: topHoldingsColors, borderWidth: 0 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            
+            charts.gaugeFire = new Chart(document.getElementById('gaugeFire').getContext('2d'), { type: 'doughnut', data: { datasets: [{ data: [0, 100], backgroundColor: ['#4f46e5', '#f1f5f9'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '80%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, animation: { duration: 0 } } });
+            charts.gaugeCurrent = new Chart(document.getElementById('gaugeCurrentRatio').getContext('2d'), { type: 'doughnut', data: { datasets: [{ data: [0, 100], backgroundColor: ['#e2e8f0', '#e2e8f0'], borderWidth: 0 }] }, options: gaugeConfig });
+            charts.gaugeDebt = new Chart(document.getElementById('gaugeDebtRatio').getContext('2d'), { type: 'doughnut', data: { datasets: [{ data: [0, 100], backgroundColor: ['#e2e8f0', '#e2e8f0'], borderWidth: 0 }] }, options: gaugeConfig });
+            charts.gaugeLeverage = new Chart(document.getElementById('gaugeLeverageRatio').getContext('2d'), { type: 'doughnut', data: { datasets: [{ data: [0, 100], backgroundColor: ['#e2e8f0', '#e2e8f0'], borderWidth: 0 }] }, options: gaugeConfig });
+        
+            document.getElementById('timeframeSelect').addEventListener('change', window.updateTrendChart);
+            bindLedgerEvents(); 
+            
+            // 綁定放大鏡下拉選單的計算邏輯
+            document.getElementById('inspectStockSelect').addEventListener('change', function(e) {
+                const stockName = e.target.value;
+                if (!stockName) {
+                    document.getElementById('insShares').innerText = '--';
+                    document.getElementById('insAvgPrice').innerText = '--';
+                    document.getElementById('insMarketVal').innerText = '--';
+                    document.getElementById('insRoi').innerText = '--';
+                    document.getElementById('insRoi').className = 'font-bold text-slate-800';
+                    return;
+                }
+                
+                let tShares = 0, tCost = 0, tMarketVal = 0;
+                window.globalHoldingsList.forEach(item => {
+                    if (item.name === stockName) {
+                        tShares += item.shares;
+                        tCost += item.cost;
+                        tMarketVal += item.marketVal;
+                    }
+                });
+                
+                document.getElementById('insShares').innerText = new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 2 }).format(tShares);
+                document.getElementById('insMarketVal').innerText = (tMarketVal / 10000).toFixed(1);
+                
+                if (tCost > 0) {
+                    const avgPrice = tShares > 0 ? (tCost / tShares) : 0;
+                    const roi = (tMarketVal - tCost) / tCost;
+                    
+                    document.getElementById('insAvgPrice').innerText = avgPrice.toFixed(2);
+                    const elRoi = document.getElementById('insRoi');
+                    elRoi.innerText = (roi >= 0 ? '+' : '') + (roi * 100).toFixed(2) + '%';
+                    elRoi.className = `font-bold ${roi >= 0 ? 'text-rose-600' : 'text-emerald-600'}`;
+                } else {
+                    document.getElementById('insAvgPrice').innerText = '--';
+                    const elRoi = document.getElementById('insRoi');
+                    elRoi.innerText = '--';
+                    elRoi.className = 'font-bold text-slate-400';
+                }
+            });
+        }
+
+        document.addEventListener('click', function(e) {
+            let btn = e.target.closest('#btnEditFireTarget');
+            if(btn) {
+                let newVal = prompt("請輸入您的預估退休金目標（單位：萬元）：", globalFireTarget / 10000);
+                if(newVal !== null && !isNaN(newVal) && newVal > 0) {
+                    globalFireTarget = parseFloat(newVal) * 10000;
+                    refreshRiskDOM(portfolioSnapshot.totalAsset);
+                }
+            }
+        });
+
+        // 核心解析邏輯抽取 (供上傳與快取共用)
+        function parseExcelBuffer(buffer) {
+            try {
+                const data = new Uint8Array(buffer);
+                const wb = XLSX.read(data, {type: 'array'});
+                const dataSheet = wb.Sheets['數據'];
+
+                let targetSheetName = wb.SheetNames.find(n => n.includes('持股明細')) || wb.SheetNames[0];
+                const worksheet = wb.Sheets[targetSheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                
+                let extractedDate = "";
+                if(json[0]) {
+                    for(let i=0; i<json[0].length; i++) {
+                        if(String(json[0][i]).replace(/\s/g, '').includes('更新日期')) {
+                            if(json[0][i+1]) { extractedDate = String(json[0][i+1]).trim(); }
+                            break;
+                        }
+                    }
+                }
+                if(!extractedDate) {
+                    const d = new Date();
+                    extractedDate = `${d.getFullYear()-1911}/${(d.getMonth()+1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}`;
+                }
+                
+                const elUpdateDate = document.getElementById('valUpdateDate');
+                if (elUpdateDate) elUpdateDate.innerText = extractedDate;
+
+                if (dataSheet) {
+                    macroData.S7 = getCellVal(dataSheet, 'S7');
+                    macroData.S9 = getCellVal(dataSheet, 'S9');
+                    macroData.S10 = getCellVal(dataSheet, 'S10');
+                    macroData.S11 = getCellVal(dataSheet, 'S11', true);
+                    macroData.S12 = getCellVal(dataSheet, 'S12', true);
+                    macroData.S13 = getCellVal(dataSheet, 'S13');
+                    macroData.S14 = getCellVal(dataSheet, 'S14');
+                    macroData.S15 = getCellVal(dataSheet, 'S15', true);
+                    macroData.F63 = getCellVal(dataSheet, 'F63', true);
+                    macroData.S17 = getCellVal(dataSheet, 'S17', true);
+                    
+                    const rowsObj = XLSX.utils.sheet_to_json(dataSheet, {header: "A", raw: true, defval: ""});
+                    heatmapData = {};
+                    assetHistory = {}; 
+                    let trendLabels = [];
+                    let trendValues = [];
+                    let trendFundA = [];
+                    let trendFundB = [];
+                    
+                    let maxYM = 999999;
+                    const today = new Date();
+                    const todayYM = (today.getFullYear() - 1911) * 100 + today.getMonth() + 1;
+                    globalExtractedYr = String(today.getFullYear() - 1911);
+                    
+                    let matchYM = extractedDate.match(/(\d{3})\/(\d{2})/);
+                    if (matchYM) {
+                        globalExtractedYr = matchYM[1];
+                        let updateYM = parseInt(matchYM[1] + matchYM[2], 10);
+                        maxYM = Math.min(updateYM, todayYM); 
+                    } else {
+                        maxYM = todayYM;
+                    }
+
+                    rowsObj.forEach(row => {
+                        let dateStr = "";
+                        for (let key in row) {
+                            let val = String(row[key] || '').trim();
+                            if (val.match(/^11[0-9]{3}$/)) {
+                                dateStr = val;
+                                break;
+                            }
+                        }
+
+                        if (dateStr !== "") {
+                            let rowYM = parseInt(dateStr, 10);
+                            let yr = dateStr.substring(0, 3);
+                            let mo = dateStr.substring(3, 5);
+
+                            let ttVal = row.H; 
+                            let tPctVal = row.J; 
+                            let fundAVal = row.M;
+                            let fundBVal = row.N;
+
+                            if (ttVal !== undefined && ttVal !== '') {
+                                assetHistory[yr + mo] = parseNum(ttVal);
+                            }
+
+                            if (rowYM <= maxYM) {
+                                if (yr !== '113' && tPctVal !== undefined && tPctVal !== '') {
+                                    if (!heatmapData[yr]) heatmapData[yr] = {};
+                                    let parsedI = parsePct(tPctVal);
+                                    if (parsedI !== undefined) heatmapData[yr][mo] = parsedI;
+                                }
+                                if (ttVal !== undefined && ttVal !== '') {
+                                    trendLabels.push(`${yr}/${mo}`);
+                                    trendValues.push(parseNum(ttVal) / 10000); 
+                                    trendFundA.push(fundAVal !== undefined && fundAVal !== '' ? parseNum(fundAVal) : null);
+                                    trendFundB.push(fundBVal !== undefined && fundBVal !== '' ? parseNum(fundBVal) : null);
+                                }
+                            }
+                        }
+                    });
+                    
+                    globalTrendData = { labels: trendLabels, values: trendValues, fundA: trendFundA, fundB: trendFundB };
+                    
+                    const rowsArr = XLSX.utils.sheet_to_json(dataSheet, {header: 1});
+                    extractRiskMetrics(rowsArr);
+                }
+
+                let currentTotalAsset = processDashboard(json);
+                
+                renderHeatmap();
+                updateTrendChart();
+                refreshRiskDOM(macroData.S7 !== null ? macroData.S7 : currentTotalAsset);
+                
+                const btnDiag = document.getElementById('btnAiDiagnosis');
+                if (btnDiag) btnDiag.disabled = false;
+                const btnLedger = document.getElementById('btnOpenLedger');
+                if (btnLedger) btnLedger.disabled = false;
+                
+                lucide.createIcons();
+
+            } catch (error) {
+                console.error("解析錯誤:", error);
+                const elStatus = document.getElementById('statusTag');
+                if (elStatus) {
+                    elStatus.innerHTML = '<i data-lucide="alert-circle" class="w-4 h-4"></i> 解析失敗';
+                    elStatus.className = 'px-3 py-1 bg-rose-100 text-rose-800 rounded-full text-sm font-medium flex items-center gap-1';
+                }
+                lucide.createIcons();
+            }
+        }
+
+        document.getElementById('fileUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const elStatus = document.getElementById('statusTag');
+            if (elStatus) {
+                elStatus.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> 資料解析中...';
+                elStatus.className = 'px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center gap-1';
+            }
+            lucide.createIcons();
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // 將 Excel 檔案轉成 Base64 永久存在瀏覽器中
+                try {
+                    const base64String = arrayBufferToBase64(e.target.result);
+                    localStorage.setItem('cfa_excel_cache', base64String);
+                    document.getElementById('btnClearCache').classList.remove('hidden');
+                } catch(err) { console.warn('快取寫入失敗，可能檔案過大:', err); }
+                
+                parseExcelBuffer(e.target.result);
+                
+                if (elStatus) {
+                    elStatus.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i> 更新成功';
+                    elStatus.className = 'px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-sm font-medium flex items-center gap-1';
+                }
+                lucide.createIcons();
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // 清除快取按鈕邏輯
+        document.getElementById('btnClearCache').addEventListener('click', function() {
+            if(confirm('確定要清除本機記憶的 Excel 資料嗎？（清除後需重新上傳檔案）')) {
+                localStorage.removeItem('cfa_excel_cache');
+                location.reload();
+            }
+        });
+
+        function processDashboard(rows) {
+            let totalAsset = 0, totalCost = 0, levTotal = 0;
+            let alloc = { '股': 0, '債': 0, '現金': 0, '黃金': 0 }, strats = { '市值型': 0, '產業型': 0, '個股': 0 };
+            let accs = {}, fxs = { 'T': 0, 'U': 0, 'G': 0, 'J': 0 }, hMap = new Map();
+            let uniqueHoldings = new Set();
+            
+            window.globalHoldingsList = [];
+
+            let hRowIdx = 0;
+            for(let i=0; i<Math.min(10, rows.length); i++) {
+                if(rows[i] && typeof rows[i] === 'object') {
+                    if(rows[i].some(c => c !== undefined && c !== null && typeof c === 'string' && (c.includes('標的名稱') || c.includes('股數')))) {
+                        hRowIdx = i; break;
+                    }
+                }
+            }
+            
+            let col = { type: 1, strat: 2, lev: 3, name: 5, shares: 6, cost: 8, marketVal: 10, acc: 14, fx: 15 };
+            if (rows[hRowIdx]) {
+                let hr = rows[hRowIdx];
+                let findColExact = (kw, def) => { 
+                    let idx = hr.findIndex((c, i) => i < 16 && c !== undefined && c !== null && kw.some(k => String(c).trim() === k)); 
+                    if (idx !== -1) return idx;
+                    let idxBlur = hr.findIndex((c, i) => i < 16 && c !== undefined && c !== null && typeof c === 'string' && kw.some(k => c.includes(k)));
+                    return idxBlur !== -1 ? idxBlur : def;
+                };
+                
+                col.type = findColExact(['股債', '資產'], 1);
+                col.strat = findColExact(['性質', '策略'], 2);
+                col.lev = findColExact(['槓桿'], 3);
+                col.name = findColExact(['標的名稱'], 5);
+                col.shares = findColExact(['股數'], 6);
+                col.cost = findColExact(['總成本', '成本'], 8);
+                col.marketVal = findColExact(['總市值', '市價'], 10);
+                col.acc = findColExact(['帳戶'], 14); 
+                col.fx = findColExact(['匯率', '幣別', '匯率代碼'], 15);
+            }
+
+            for (let i = hRowIdx + 1; i < rows.length; i++) {
+                const r = rows[i];
+                if (!r || r.length < Math.max(col.marketVal, col.cost)) continue;
+                
+                let rawType = String(r[col.type] || '').trim();
+                let type = (rawType.toUpperCase() === 'GOLD') ? '黃金' : rawType;
+                
+                const strat = r[col.strat], marketVal = parseNum(r[col.marketVal]), cost = parseNum(r[col.cost]);
+                let name = String(r[col.name] || r[col.name - 1] || '').replace('ETF連結基金A', '').trim();
+
+                if (['股', '債', '現金', '黃金'].includes(type)) {
+                    totalAsset += marketVal; totalCost += cost;
+                    alloc[type] += marketVal;
+                    if (String(r[col.lev]) === '2' || r[col.lev] === 2) levTotal += marketVal;
+                    
+                    if (name) {
+                        uniqueHoldings.add(name);
+                        window.globalHoldingsList.push({
+                            name: name,
+                            shares: parseNum(r[col.shares]),
+                            cost: cost,
+                            marketVal: marketVal
+                        });
+                    }
+
+                    if (type === '股') {
+                        if (strat && (strat.includes('市值'))) strats['市值型'] += marketVal;
+                        else if (strat && (strat.includes('產業') || strat.includes('主題'))) strats['產業型'] += marketVal;
+                        else strats['個股'] += marketVal;
+                    }
+                    accs[r[col.acc] || '未分類'] = (accs[r[col.acc] || '未分類'] || 0) + marketVal;
+                    fxs[r[col.fx] || 'T'] = (fxs[r[col.fx] || 'T'] || 0) + marketVal;
+                    
+                    hMap.set(name, (hMap.get(name) || 0) + marketVal);
+                }
+            }
+
+            const displayTotalAsset = macroData.S7 !== null ? macroData.S7 : totalAsset;
+            const displayTotalCost = macroData.S9 !== null ? macroData.S9 : totalCost;
+            let cagr = macroData.S12 !== null ? macroData.S12 : (displayTotalCost > 0 ? (Math.pow(displayTotalAsset / displayTotalCost, 1 / Math.max(globalInvestYears, 0.1)) - 1) : 0);
+            
+            const elHoldingsCount = document.getElementById('valHoldingsCount');
+            if (elHoldingsCount) elHoldingsCount.innerText = uniqueHoldings.size;
+            
+            const elTotalAsset = document.getElementById('valTotalAsset');
+            if (elTotalAsset) elTotalAsset.innerText = 'NT$ ' + fmtNum(displayTotalAsset);
+            const elTotalCost = document.getElementById('valTotalCost');
+            if (elTotalCost) elTotalCost.innerText = fmtNum(displayTotalCost);
+            const elTotalDebt = document.getElementById('valTotalDebtMacro');
+            if (elTotalDebt) elTotalDebt.innerText = fmtNum(globalTotalDebt);
+            
+            const accProfit = macroData.S10 !== null ? macroData.S10 : (displayTotalAsset - displayTotalCost);
+            const accRate = macroData.S11 !== null ? macroData.S11 : (displayTotalCost > 0 ? (accProfit / displayTotalCost) : 0);
+            
+            const cardAcc = document.getElementById('cardAccumulated');
+            const valAcc = document.getElementById('valAccumulatedProfit');
+            const rateAcc = document.getElementById('valAccumulatedRate');
+            
+            if (valAcc) {
+                valAcc.innerText = (accProfit >= 0 ? '+ ' : '- ') + 'NT$ ' + fmtNum(Math.abs(accProfit));
+                valAcc.className = `text-2xl font-bold ${accProfit >= 0 ? 'text-rose-600' : 'text-emerald-600'}`;
+            }
+            if (rateAcc) {
+                rateAcc.innerText = (accProfit >= 0 ? '+' : '') + fmtPct(accRate);
+                rateAcc.className = `font-medium ${accProfit >= 0 ? 'text-rose-600' : 'text-emerald-600'}`;
+            }
+            if (cardAcc) cardAcc.className = `glass-card border-l-4 border-slate-300`;
+
+            const ytdBase = macroData.S13 !== null ? macroData.S13 : globalYtdBase;
+            const ytdProfit = macroData.S14 !== null ? macroData.S14 : (displayTotalAsset - ytdBase);
+            const ytdRate = macroData.S15 !== null ? macroData.S15 : (ytdBase > 0 ? (ytdProfit / ytdBase) : 0);
+            
+            const elYtdProfit = document.getElementById('valYtdProfit');
+            const elYtdRate = document.getElementById('valYtdRate');
+            const elYtdBase = document.getElementById('valYtdBase');
+            if (elYtdBase) elYtdBase.innerText = fmtNum(ytdBase);
+            if (elYtdProfit) {
+                elYtdProfit.innerText = (ytdProfit >= 0 ? '+ ' : '- ') + 'NT$ ' + fmtNum(Math.abs(ytdProfit));
+                elYtdProfit.className = `text-2xl font-bold ${ytdProfit >= 0 ? 'text-rose-600' : 'text-emerald-600'}`;
+            }
+            if (elYtdRate) {
+                elYtdRate.innerText = (ytdProfit >= 0 ? '+' : '') + fmtPct(ytdRate);
+                elYtdRate.className = `font-medium ${ytdProfit >= 0 ? 'text-rose-600' : 'text-emerald-600'}`;
+            }
+
+            const elCagr = document.getElementById('valCagr');
+            if (elCagr) {
+                elCagr.innerText = (cagr >= 0 ? '+' : '') + fmtPct(cagr);
+                elCagr.className = `font-medium ${cagr >= 0 ? 'text-rose-600' : 'text-emerald-600'}`;
+            }
+
+            const sorted = Array.from(hMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            let leftList = '', rightList = '';
+            let top10TotalValue = 0;
+            sorted.forEach((item, idx) => {
+                const ratio = displayTotalAsset > 0 ? (item[1] / displayTotalAsset) : 0;
+                top10TotalValue += item[1];
+                const html = `<div class="flex justify-between items-center text-xs mb-2"><span class="flex items-center gap-1 overflow-hidden"><span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${topHoldingsColors[idx]}"></span><span class="truncate" title="${item[0]}">${idx+1}. ${item[0]}</span></span><span class="font-bold ml-1 flex-shrink-0 ${idx === 0 ? 'text-indigo-600' : 'text-slate-800'}">${fmtPct(ratio)}</span></div>`;
+                if (idx < 5) leftList += html; else rightList += html;
+            });
+
+            let htmlContent = `<div class="flex flex-col md:flex-row w-full gap-x-6 gap-y-3"><div class="flex-1 flex flex-col w-full md:w-1/2">${leftList}</div>${rightList ? `<div class="flex-1 flex flex-col w-full md:w-1/2">${rightList}</div>` : ''}</div>`;
+            const othersValue = displayTotalAsset - top10TotalValue;
+            if (othersValue > 0) {
+                htmlContent += `<div class="flex justify-between items-center pt-3 mt-3 border-t border-slate-100"><span class="text-slate-500 flex items-center text-xs"><span class="w-2 h-2 rounded-full mr-2 flex-shrink-0" style="background:${topHoldingsColors[10]};"></span><span>其他 (共 ${uniqueHoldings.size - sorted.length} 檔)</span></span><span class="font-medium text-slate-500 text-xs ml-2">${fmtPct(othersValue / displayTotalAsset)}</span></div>`;
+            }
+            
+            const elListTop = document.getElementById('listTopHoldings');
+            if (elListTop) elListTop.innerHTML = htmlContent;
+
+            if (charts.allocation) {
+                charts.allocation.data.labels = ['股票', '債券', '現金', '黃金'];
+                charts.allocation.data.datasets[0].data = [alloc['股'], alloc['債'], alloc['現金'], alloc['黃金']];
+                charts.allocation.data.datasets[0].backgroundColor = ['#6366f1', '#10b981', '#f43f5e', '#eab308'];
+                charts.allocation.update();
+            }
+
+            if (charts.topHoldings) {
+                charts.topHoldings.data.labels = sorted.map(i => i[0]);
+                if(othersValue > 0) charts.topHoldings.data.labels.push('其他');
+                let tData = sorted.map(i => i[1]);
+                if(othersValue > 0) tData.push(othersValue);
+                charts.topHoldings.data.datasets[0].data = tData;
+                charts.topHoldings.update();
+            }
+
+            if (charts.strategy) {
+                charts.strategy.data.labels = ['市值型', '產業型/主題', '個股 (含美股)'];
+                charts.strategy.data.datasets[0].data = [strats['市值型']/10000, strats['產業型']/10000, strats['個股']/10000];
+                charts.strategy.data.datasets[0].backgroundColor = ['#818cf8', '#34d399', '#fbbf24'];
+                charts.strategy.update();
+            }
+
+            if (charts.account) {
+                charts.account.data.labels = Object.keys(accs);
+                charts.account.data.datasets[0].data = Object.values(accs);
+                charts.account.data.datasets[0].backgroundColor = ['#e11d48', '#0ea5e9', '#f59e0b', '#8b5cf6', '#14b8a6', '#f43f5e'];
+                charts.account.update();
+            }
+
+            if (charts.fx) {
+                charts.fx.data.labels = ['台幣 (TWD)', '外幣 (USD/等)'];
+                charts.fx.data.datasets[0].data = [fxs['T'] || 0, (fxs['U'] || 0) + (fxs['G'] || 0) + (fxs['J'] || 0)];
+                charts.fx.data.datasets[0].backgroundColor = ['#3b82f6', '#14b8a6'];
+                charts.fx.update();
+            }
+
+            // 更新個股放大鏡的下拉選單
+            const elSelectInspect = document.getElementById('inspectStockSelect');
+            if (elSelectInspect) {
+                elSelectInspect.innerHTML = '<option value="">請選擇欲分析之標的...</option>';
+                Array.from(uniqueHoldings).sort().forEach(stock => {
+                    let opt = document.createElement('option');
+                    opt.value = stock;
+                    opt.textContent = stock;
+                    elSelectInspect.appendChild(opt);
+                });
+            }
+
+            portfolioSnapshot = { totalAsset: displayTotalAsset, stock: alloc['股'], bond: alloc['債'], cash: alloc['現金'], gold: alloc['黃金'], leverageAsset: levTotal, cagr: cagr, topHoldingsNames: sorted.map(i => i[0]) };
+            
+            window.consolidatedHoldings = Array.from(uniqueHoldings).map(stockName => {
+                let tShares = 0, tCost = 0, tMarketVal = 0;
+                window.globalHoldingsList.forEach(item => {
+                    if (item.name === stockName) {
+                        tShares += item.shares;
+                        tCost += item.cost;
+                        tMarketVal += item.marketVal;
+                    }
+                });
+                let avgPrice = tShares > 0 ? tCost / tShares : 0;
+                let currentPrice = tShares > 0 ? tMarketVal / tShares : 0;
+                let profit = tMarketVal - tCost;
+                let roi = tCost > 0 ? profit / tCost : 0;
+                
+                return {
+                    name: stockName,
+                    shares: tShares,
+                    avgPrice: avgPrice,
+                    currentPrice: currentPrice,
+                    cost: tCost,
+                    marketVal: tMarketVal,
+                    profit: profit,
+                    roi: roi
+                };
+            });
+            
+            renderLedgerTable();
+            return displayTotalAsset;
+        }
+
+        function renderLedgerTable() {
+            const tbody = document.getElementById('ledgerTableBody');
+            if (!tbody || window.consolidatedHoldings.length === 0) return;
+
+            window.consolidatedHoldings.sort((a, b) => {
+                let valA = a[window.ledgerSortCol];
+                let valB = b[window.ledgerSortCol];
+                if (typeof valA === 'string') { return window.ledgerSortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA); }
+                else { return window.ledgerSortDir === 'asc' ? valA - valB : valB - valA; }
+            });
+
+            let html = '';
+            window.consolidatedHoldings.forEach(item => {
+                const profitColor = item.profit >= 0 ? 'text-rose-600' : 'text-emerald-600';
+                const profitSign = item.profit >= 0 ? '+' : '';
+                
+                html += `
+                    <tr class="hover:bg-indigo-50/50 transition-colors">
+                        <td class="py-3 px-4 font-medium text-slate-800">${item.name}</td>
+                        <td class="py-3 px-4 text-right">${new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 2 }).format(item.shares)}</td>
+                        <td class="py-3 px-4 text-right">${item.avgPrice > 0 ? item.avgPrice.toFixed(2) : '--'}</td>
+                        <td class="py-3 px-4 text-right">${item.currentPrice > 0 ? item.currentPrice.toFixed(2) : '--'}</td>
+                        <td class="py-3 px-4 text-right">${fmtNum(item.cost)}</td>
+                        <td class="py-3 px-4 text-right font-medium text-slate-700">${fmtNum(item.marketVal)}</td>
+                        <td class="py-3 px-4 text-right font-bold ${item.cost > 0 ? profitColor : 'text-slate-400'}">${item.cost > 0 ? profitSign + fmtNum(item.profit) : '--'}</td>
+                        <td class="py-3 px-4 text-right font-bold ${item.cost > 0 ? profitColor : 'text-slate-400'}">${item.cost > 0 ? profitSign + (item.roi * 100).toFixed(2) + '%' : '--'}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function bindLedgerEvents() {
+            const btnOpen = document.getElementById('btnOpenLedger');
+            const modal = document.getElementById('ledgerModal');
+            const btnClose = document.getElementById('btnCloseLedger');
+            const ths = document.querySelectorAll('.sortable-th');
+
+            if (btnOpen) btnOpen.addEventListener('click', () => { if (modal) modal.classList.add('active'); });
+            if (btnClose) btnClose.addEventListener('click', () => { if (modal) modal.classList.remove('active'); });
+            if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
+
+            ths.forEach(th => {
+                th.addEventListener('click', () => {
+                    const sortKey = th.getAttribute('data-sort');
+                    if (window.ledgerSortCol === sortKey) { window.ledgerSortDir = window.ledgerSortDir === 'asc' ? 'desc' : 'asc'; } 
+                    else { window.ledgerSortCol = sortKey; window.ledgerSortDir = sortKey === 'name' ? 'asc' : 'desc'; }
+
+                    ths.forEach(t => {
+                        t.classList.remove('active');
+                        const icon = t.querySelector('.sort-icon');
+                        if (icon) icon.setAttribute('data-lucide', 'arrow-up-down');
+                    });
+                    
+                    th.classList.add('active');
+                    const activeIcon = th.querySelector('.sort-icon');
+                    if (activeIcon) { activeIcon.setAttribute('data-lucide', window.ledgerSortDir === 'asc' ? 'arrow-up' : 'arrow-down'); }
+                    renderLedgerTable();
+                });
+            });
+        }
+
+        function renderHeatmap() {
+            const container = document.getElementById('heatmapContainer');
+            if (!container) return;
+            
+            const yrs = Object.keys(heatmapData).sort().reverse();
+            if (yrs.length === 0) {
+                container.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">尚無熱力圖資料，請確認數據頁面 J 欄格式</p>';
+                return;
+            }
+            
+            let html = `<table class="heatmap-table"><thead><tr><th class="w-16"></th>`;
+            for (let m = 1; m <= 12; m++) html += `<th class="heatmap-label">${m}月</th>`;
+            html += `<th class="heatmap-label font-bold text-indigo-600">YTD</th></tr></thead><tbody>`;
+            
+            yrs.forEach(yr => {
+                html += `<tr><td class="font-bold text-slate-700 text-sm text-center">${yr}</td>`;
+                for (let m = 1; m <= 12; m++) {
+                    const mStr = String(m).padStart(2, '0');
+                    const val = heatmapData[yr][mStr];
+                    let bgColor = '#f8fafc', color = 'transparent';
+                    if (val !== undefined) {
+                        const alpha = Math.max(0.1, Math.min(Math.abs(val) * 15, 1)); 
+                        if (val > 0) { bgColor = `rgba(244, 63, 94, ${alpha})`; } 
+                        else if (val < 0) { bgColor = `rgba(16, 185, 129, ${alpha})`; } 
+                        else { bgColor = '#e2e8f0'; }
+                        color = alpha > 0.4 ? '#fff' : '#1e293b';
+                    }
+                    html += `<td class="heatmap-cell" style="background-color:${bgColor}; color:${color}">${val !== undefined ? (val*100).toFixed(1) + '%' : ''}</td>`;
+                }
+
+                let ytdHtml = '--';
+                if (yr === globalExtractedYr) {
+                    ytdHtml = fmtPct(macroData.S15 || 0);
+                } else {
+                    let prevYr = String(parseInt(yr, 10) - 1);
+                    let prevDec = assetHistory[prevYr + '12'];
+                    let currYrLastVal = null;
+                    for (let m = 12; m >= 1; m--) {
+                        let mStr = String(m).padStart(2, '0');
+                        if (assetHistory[yr + mStr] !== undefined) { currYrLastVal = assetHistory[yr + mStr]; break; }
+                    }
+                    if (currYrLastVal !== null && prevDec !== undefined && prevDec > 0) { ytdHtml = fmtPct((currYrLastVal - prevDec) / prevDec); }
+                }
+                html += `<td class="heatmap-cell bg-indigo-50 text-indigo-700 font-bold">${ytdHtml}</td></tr>`;
+            });
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        function refreshRiskDOM(total) {
+            const fireRate = Math.min(total / globalFireTarget, 1.5);
+            const elFireRate = document.getElementById('valFireRate');
+            if (elFireRate) elFireRate.innerText = (fireRate * 100).toFixed(1) + '%';
+            if (charts.gaugeFire) {
+                charts.gaugeFire.data.datasets[0].data = [fireRate * 100, Math.max(0, 100 - fireRate * 100)];
+                charts.gaugeFire.update();
+            }
+
+            const elFireTarget = document.getElementById('valFireTarget');
+            if(elFireTarget) elFireTarget.innerText = fmtNum(globalFireTarget / 10000);
+
+            const elFireYears = document.getElementById('valFireYears');
+            if(elFireYears) {
+                if (total >= globalFireTarget) {
+                    elFireYears.innerText = "🎉 已達標！";
+                    elFireYears.className = "text-[11px] mt-1 font-bold text-emerald-500";
+                } else if (portfolioSnapshot.cagr > 0 && total > 0) {
+                    const years = Math.log(globalFireTarget / total) / Math.log(1 + portfolioSnapshot.cagr);
+                    elFireYears.innerText = `預期達標：約 ${(years).toFixed(1)} 年`;
+                    elFireYears.className = "text-[11px] text-slate-400 mt-1 font-medium";
+                } else {
+                    elFireYears.innerText = "⚠️ 需提升報酬率以估算";
+                    elFireYears.className = "text-[11px] text-rose-400 mt-1 font-medium";
+                }
+            }
+
+            const cash = portfolioSnapshot.cash;
+            const cashPct = Math.min((cash / 600000) * 100, 100);
+            
+            const elCashAmount = document.getElementById('valCashAmount');
+            if (elCashAmount) elCashAmount.innerText = (cash/10000).toFixed(1) + ' 萬';
+            
+            const elCashBar = document.getElementById('barCashAlert');
+            if (elCashBar) { elCashBar.style.width = cashPct + '%'; }
+
+            const badgeCash = document.getElementById('badgeCashAlert');
+            const iconCash = document.getElementById('iconCashAlert');
+            const cardCash = document.getElementById('cardCashAlert');
+            
+            if (cash >= 600000) {
+                if (badgeCash) { badgeCash.innerText = '綠燈安全'; badgeCash.className = 'text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded inline-block mt-0.5'; }
+                if (iconCash) iconCash.className = 'p-2 bg-emerald-100 text-emerald-600 rounded-lg';
+                if (cardCash) cardCash.className = 'glass-card bg-emerald-50 border border-emerald-100 flex flex-col justify-between';
+                if (elCashBar) elCashBar.className = 'bg-emerald-500 h-2.5 rounded-full transition-all duration-500';
+                if (elCashAmount) elCashAmount.className = 'font-bold text-emerald-600 text-lg';
+            } else if (cash >= 300000) {
+                if (badgeCash) { badgeCash.innerText = '黃燈提醒'; badgeCash.className = 'text-xs font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded inline-block mt-0.5'; }
+                if (iconCash) iconCash.className = 'p-2 bg-amber-100 text-amber-600 rounded-lg';
+                if (cardCash) cardCash.className = 'glass-card bg-amber-50 border border-amber-100 flex flex-col justify-between';
+                if (elCashBar) elCashBar.className = 'bg-amber-500 h-2.5 rounded-full transition-all duration-500';
+                if (elCashAmount) elCashAmount.className = 'font-bold text-amber-600 text-lg';
+            } else {
+                if (badgeCash) { badgeCash.innerText = '紅燈警戒'; badgeCash.className = 'text-xs font-bold text-rose-600 bg-rose-100 px-2 py-0.5 rounded inline-block mt-0.5'; }
+                if (iconCash) iconCash.className = 'p-2 bg-rose-100 text-rose-600 rounded-lg';
+                if (cardCash) cardCash.className = 'glass-card bg-rose-50 border border-rose-100 flex flex-col justify-between';
+                if (elCashBar) elCashBar.className = 'bg-rose-500 h-2.5 rounded-full transition-all duration-500';
+                if (elCashAmount) elCashAmount.className = 'font-bold text-rose-600 text-lg';
+            }
+
+            const currentRatio = macroData.F63 !== null ? macroData.F63 : (globalCurrentLiabilities > 0 ? (cash + portfolioSnapshot.bond) / globalCurrentLiabilities : 0);
+            const elCurrentRatio = document.getElementById('valCurrentRatio');
+            if (elCurrentRatio) elCurrentRatio.innerText = (currentRatio * 100).toFixed(1) + '%';
+            
+            const badgeCurrent = document.getElementById('badgeCurrentRatio');
+            const cardCurrent = document.getElementById('cardCurrentRatio');
+            const iconCurrent = document.getElementById('iconCurrentRatio');
+
+            if (currentRatio >= 3.0) {
+                if (badgeCurrent) { badgeCurrent.innerText = '綠燈安全'; badgeCurrent.className = 'text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded inline-block mt-0.5'; }
+                if (iconCurrent) iconCurrent.className = 'p-2 bg-emerald-100 text-emerald-600 rounded-lg';
+                if (cardCurrent) cardCurrent.className = 'glass-card bg-emerald-50 border border-emerald-100 flex flex-col justify-between';
+                if (elCurrentRatio) elCurrentRatio.className = 'font-bold text-3xl text-emerald-600 transition-colors duration-300';
+            } else if (currentRatio >= 1.5) {
+                if (badgeCurrent) { badgeCurrent.innerText = '黃燈提醒'; badgeCurrent.className = 'text-xs font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded inline-block mt-0.5'; }
+                if (iconCurrent) iconCurrent.className = 'p-2 bg-amber-100 text-amber-600 rounded-lg';
+                if (cardCurrent) cardCurrent.className = 'glass-card bg-amber-50 border border-amber-100 flex flex-col justify-between';
+                if (elCurrentRatio) elCurrentRatio.className = 'font-bold text-3xl text-amber-600 transition-colors duration-300';
+            } else {
+                if (badgeCurrent) { badgeCurrent.innerText = '紅燈警戒'; badgeCurrent.className = 'text-xs font-bold text-rose-600 bg-rose-100 px-2 py-0.5 rounded inline-block mt-0.5'; }
+                if (iconCurrent) iconCurrent.className = 'p-2 bg-rose-100 text-rose-600 rounded-lg';
+                if (cardCurrent) cardCurrent.className = 'glass-card bg-rose-50 border border-rose-100 flex flex-col justify-between';
+                if (elCurrentRatio) elCurrentRatio.className = 'font-bold text-3xl text-rose-600 transition-colors duration-300';
+            }
+
+            if (charts.gaugeCurrent) {
+                charts.gaugeCurrent.data.datasets[0].data = [Math.min(currentRatio * 100, 400), Math.max(0, 400 - currentRatio * 100)];
+                charts.gaugeCurrent.data.datasets[0].backgroundColor = [currentRatio >= 3 ? '#10b981' : (currentRatio >= 1.5 ? '#f59e0b' : '#f43f5e'), '#f1f5f9'];
+                charts.gaugeCurrent.update();
+            }
+
+            const dRate = globalTotalDebt / (total > 0 ? total : 1);
+            const elDebtRatio = document.getElementById('valDebtRatio');
+            if (elDebtRatio) elDebtRatio.innerText = (dRate * 100).toFixed(1) + '%';
+            
+            const badgeDebt = document.getElementById('badgeDebtRatio');
+            const cardDebt = document.getElementById('cardDebtRatio');
+            const iconDebt = document.getElementById('iconDebtRatio');
+
+            if (dRate >= 0.2 && dRate <= 0.5) {
+                if (badgeDebt) { badgeDebt.innerText = '綠燈安全'; badgeDebt.className = 'text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded inline-block mt-0.5'; }
+                if (iconDebt) iconDebt.className = 'p-2 bg-emerald-100 text-emerald-600 rounded-lg';
+                if (cardDebt) cardDebt.className = 'glass-card bg-emerald-50 border border-emerald-100 flex flex-col justify-between';
+                if (elDebtRatio) elDebtRatio.className = 'font-bold text-3xl text-emerald-600 transition-colors duration-300';
+            } else if (dRate > 0.5 && dRate <= 0.65) {
+                if (badgeDebt) { badgeDebt.innerText = '黃燈提醒'; badgeDebt.className = 'text-xs font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded inline-block mt-0.5'; }
+                if (iconDebt) iconDebt.className = 'p-2 bg-amber-100 text-amber-600 rounded-lg';
+                if (cardDebt) cardDebt.className = 'glass-card bg-amber-50 border border-amber-100 flex flex-col justify-between';
+                if (elDebtRatio) elDebtRatio.className = 'font-bold text-3xl text-amber-600 transition-colors duration-300';
+            } else {
+                if (badgeDebt) { badgeDebt.innerText = '紅燈警戒'; badgeDebt.className = 'text-xs font-bold text-rose-600 bg-rose-100 px-2 py-0.5 rounded inline-block mt-0.5'; }
+                if (iconDebt) iconDebt.className = 'p-2 bg-rose-100 text-rose-600 rounded-lg';
+                if (cardDebt) cardDebt.className = 'glass-card bg-rose-50 border border-rose-100 flex flex-col justify-between';
+                if (elDebtRatio) elDebtRatio.className = 'font-bold text-3xl text-rose-600 transition-colors duration-300';
+            }
+
+            if (charts.gaugeDebt) {
+                charts.gaugeDebt.data.datasets[0].data = [Math.min(dRate * 100, 100), Math.max(0, 100 - dRate * 100)];
+                charts.gaugeDebt.data.datasets[0].backgroundColor = [(dRate >= 0.2 && dRate <= 0.5) ? '#10b981' : (dRate <= 0.65 ? '#f59e0b' : '#f43f5e'), '#f1f5f9'];
+                charts.gaugeDebt.update();
+            }
+
+            const displayLevAmt = portfolioSnapshot.leverageAsset;
+            const levRatio = total > 0 ? (displayLevAmt / total) : 0;
+            const levSafeRatio = macroData.S17 !== null ? macroData.S17 : ((cash + portfolioSnapshot.bond) > 0 ? displayLevAmt / (cash + portfolioSnapshot.bond) : 0);
+            
+            const elLevRatio = document.getElementById('valLeverageRatio');
+            if (elLevRatio) elLevRatio.innerText = (levRatio * 100).toFixed(1) + '%';
+            
+            const elLevAmt = document.getElementById('valLeverageAmount');
+            if (elLevAmt) elLevAmt.innerText = (displayLevAmt / 10000).toFixed(1) + ' 萬';
+            
+            const elLevSafe = document.getElementById('valLevToSafeRatio');
+            if (elLevSafe) elLevSafe.innerText = (levSafeRatio * 100).toFixed(1) + '%';
+
+            const badgeLev = document.getElementById('badgeLeverageAlert');
+            const cardLev = document.getElementById('cardLeverageAlert');
+            const iconLev = document.getElementById('iconLeverageAlert');
+
+            if (levSafeRatio >= 1.0) {
+                if (badgeLev) { badgeLev.innerText = '紅燈警戒'; badgeLev.className = 'text-xs font-bold text-rose-600 bg-rose-100 px-2 py-0.5 rounded inline-block mt-0.5'; }
+                if (iconLev) iconLev.className = 'p-2 bg-rose-100 text-rose-600 rounded-lg';
+                if (cardLev) cardLev.className = 'glass-card bg-rose-50 border border-rose-100 flex flex-col justify-between';
+                if (elLevSafe) elLevSafe.className = 'font-bold text-3xl text-rose-600 transition-colors duration-300';
+            } else if (levSafeRatio >= 0.5) {
+                if (badgeLev) { badgeLev.innerText = '黃燈提醒'; badgeLev.className = 'text-xs font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded inline-block mt-0.5'; }
+                if (iconLev) iconLev.className = 'p-2 bg-amber-100 text-amber-600 rounded-lg';
+                if (cardLev) cardLev.className = 'glass-card bg-amber-50 border border-amber-100 flex flex-col justify-between';
+                if (elLevSafe) elLevSafe.className = 'font-bold text-3xl text-amber-600 transition-colors duration-300';
+            } else {
+                if (badgeLev) { badgeLev.innerText = '綠燈安全'; badgeLev.className = 'text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded inline-block mt-0.5'; }
+                if (iconLev) iconLev.className = 'p-2 bg-emerald-100 text-emerald-600 rounded-lg';
+                if (cardLev) cardLev.className = 'glass-card bg-emerald-50 border border-emerald-100 flex flex-col justify-between';
+                if (elLevSafe) elLevSafe.className = 'font-bold text-3xl text-emerald-600 transition-colors duration-300';
+            }
+
+            if (charts.gaugeLeverage) {
+                charts.gaugeLeverage.data.datasets[0].data = [Math.min(levSafeRatio * 100, 150), Math.max(0, 150 - levSafeRatio * 100)];
+                charts.gaugeLeverage.data.datasets[0].backgroundColor = [levSafeRatio < 0.5 ? '#10b981' : (levSafeRatio < 1.0 ? '#f59e0b' : '#f43f5e'), '#f1f5f9'];
+                charts.gaugeLeverage.update();
+            }
+        }
+
+        function extractRiskMetrics(rows) {
+            globalTotalDebt = 0; globalCurrentLiabilities = 0; globalInvestYears = 1;
+            rows.forEach(row => {
+                if(!row || !row.length) return;
+                let idxDebt = row.findIndex(cell => typeof cell === 'string' && cell.includes('總負債'));
+                if(idxDebt !== -1) { for(let i = idxDebt + 1; i < row.length; i++) { let num = parseNum(row[i]); if(num > 0) { globalTotalDebt = num; break; } } }
+                
+                let idxLiab = row.findIndex(cell => typeof cell === 'string' && cell.includes('流動負債'));
+                if(idxLiab !== -1) { for(let i = idxLiab + 1; i < row.length; i++) { let num = parseNum(row[i]); if(num > 0) { globalCurrentLiabilities = num; break; } } }
+
+                let idxYears = row.findIndex(cell => typeof cell === 'string' && cell.includes('投資年數'));
+                if(idxYears !== -1) { for(let i = idxYears + 1; i < row.length; i++) { let num = parseNum(row[i]); if(num > 0) { globalInvestYears = num; break; } } }
+            });
+        }
+
+        window.updateTrendChart = function() {
+            const elSelect = document.getElementById('timeframeSelect');
+            if (!elSelect) return;
+            const type = elSelect.value;
+            let l = [...globalTrendData.labels], v = [...globalTrendData.values], fa = [...globalTrendData.fundA], fb = [...globalTrendData.fundB];
+            if (l.length === 0 || !charts.trend) return;
+
+            let displayLabels = [], displayValues = [], displayFundA = [], displayFundB = [];
+
+            if (type === 'quarterly') {
+                for (let i = 0; i < l.length; i++) {
+                    const parts = l[i].split('/');
+                    const year = parts[0]; const month = parts[1];
+                    if (['03', '06', '09', '12'].includes(month)) {
+                        let q = month === '03' ? 'Q1' : month === '06' ? 'Q2' : month === '09' ? 'Q3' : 'Q4';
+                        displayLabels.push(`${year} ${q}`); displayValues.push(v[i]); displayFundA.push(fa[i]); displayFundB.push(fb[i]);
+                    }
+                }
+                const lastMonth = l[l.length - 1].split('/')[1];
+                if (!['03', '06', '09', '12'].includes(lastMonth)) {
+                    displayLabels.push(`${l[l.length - 1].split('/')[0]} 至今`); displayValues.push(v[v.length - 1]); displayFundA.push(fa[fa.length - 1]); displayFundB.push(fb[fb.length - 1]);
+                }
+                charts.trend.data.datasets[1].label = '大盤對照 (基準模擬季增 4.56%)';
+            } else if (type === 'yearly') {
+                let yMap = {}; 
+                l.forEach((lbl, i) => { let y = lbl.split('/')[0]; yMap[y] = { lbl: y + '年', val: v[i], fA: fa[i], fB: fb[i] }; });
+                displayLabels = Object.values(yMap).map(i => i.lbl); displayValues = Object.values(yMap).map(i => i.val); displayFundA = Object.values(yMap).map(i => i.fA); displayFundB = Object.values(yMap).map(i => i.fB);
+                charts.trend.data.datasets[1].label = '大盤對照 (基準模擬年增 19.56%)';
+            } else if (type === 'ytd') {
+                const currentTwYear = String(new Date().getFullYear() - 1911);
+                for(let i = 0; i < l.length; i++) {
+                    if(l[i].startsWith(currentTwYear + '/')) {
+                        displayLabels.push(l[i]); displayValues.push(v[i]); displayFundA.push(fa[i]); displayFundB.push(fb[i]);
+                    }
+                }
+                charts.trend.data.datasets[1].label = '大盤對照 (基準模擬月增 1.5%)';
+            } else {
+                displayLabels = [...l]; displayValues = [...v]; displayFundA = [...fa]; displayFundB = [...fb];
+                charts.trend.data.datasets[1].label = '大盤對照 (基準模擬月增 1.5%)';
+            }
+
+            charts.trend.data.labels = displayLabels; charts.trend.data.datasets[0].data = displayValues; charts.trend.data.datasets[2].data = displayFundA; charts.trend.data.datasets[3].data = displayFundB;
+            if (displayValues.length > 0) {
+                const baseVal = displayValues[0];
+                const rate = type === 'yearly' ? Math.pow(1.015, 12) : (type === 'quarterly' ? Math.pow(1.015, 3) : 1.015);
+                const benchmark = displayValues.map((_, idx) => baseVal * Math.pow(rate, idx));
+                charts.trend.data.datasets[1].data = benchmark;
+            }
+            charts.trend.update();
+        };
+
+        // ... PDF 與 API 相關程式碼 ...
+        async function exportDashboardPdf() {
+            const btn = document.getElementById('btnExportPdf');
+            if (!btn) return;
+            const originalHTML = btn.innerHTML; const content = document.getElementById('dashboard-content'); const origScrollY = window.scrollY;
+
+            try {
+                if (typeof html2pdf !== 'function') throw new Error('PDF 函式庫尚未載入完成');
+                btn.disabled = true; btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> 產製中...'; window.scrollTo(0, 0);
+
+                const ignores = document.querySelectorAll('[data-html2canvas-ignore="true"]');
+                ignores.forEach(el => { el.dataset.origDisplay = window.getComputedStyle(el).display; el.style.display = 'none'; });
+
+                const pdfHeader = document.createElement('div'); pdfHeader.id = 'temp-pdf-header';
+                pdfHeader.innerHTML = `<div style="text-align: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0; page-break-inside: avoid; break-inside: avoid;"><h1 style="font-size: 26px; font-weight: bold; color: #1e293b; margin: 0;">個人財務績效報告</h1><p style="font-size: 13px; color: #64748b; margin-top: 6px;">CFA 理財小幫手 | 匯出時間：${new Date().toLocaleString('zh-TW')} | 報告版本：V2.3.0</p></div>`;
+                content.insertBefore(pdfHeader, content.firstChild);
+
+                await new Promise(resolve => setTimeout(resolve, 300));
+                const updateDateText = (document.getElementById('valUpdateDate')?.innerText || '最新').replace(/[\/:*?"<>|]/g, '');
+                const filename = `財務績效報告_V2.3.0_${updateDateText}.pdf`;
+
+                const opt = { margin: [10, 10, 15, 10], filename: filename, image: { type: 'jpeg', quality: 1.0 }, html2canvas: { scale: 2, useCORS: true, scrollY: 0, backgroundColor: '#f8fafc' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['.glass-card', '#temp-pdf-header'] } };
+                await html2pdf().set(opt).from(content).toPdf().get('pdf').then(function (pdf) {
+                    const totalPages = pdf.internal.getNumberOfPages(); const pageWidth = pdf.internal.pageSize.getWidth(); const pageHeight = pdf.internal.pageSize.getHeight();
+                    for (let i = 1; i <= totalPages; i++) { pdf.setPage(i); pdf.setFontSize(10); pdf.setTextColor(120); pdf.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 8, { align: 'center' }); }
+                }).save();
+            } catch (err) { console.error('PDF 匯出錯誤:', err); alert(`匯出失敗：${err.message || err}`); } 
+            finally {
+                const header = document.getElementById('temp-pdf-header'); if (header) header.remove();
+                const ignores = document.querySelectorAll('[data-html2canvas-ignore="true"]');
+                ignores.forEach(el => { if (el.dataset.origDisplay !== undefined) { el.style.display = el.dataset.origDisplay; delete el.dataset.origDisplay; } });
+                window.scrollTo(0, origScrollY); btn.disabled = false; btn.innerHTML = originalHTML;
+            }
+        }
+        const btnExportPdf = document.getElementById('btnExportPdf'); if (btnExportPdf) btnExportPdf.addEventListener('click', exportDashboardPdf);
+
+        const btnApiKeyConfig = document.getElementById('btnApiKeyConfig'); const apiKeyModal = document.getElementById('apiKeyModal'); const btnCloseApiKeyModal = document.getElementById('btnCloseApiKeyModal'); const btnSaveApiKey = document.getElementById('btnSaveApiKey'); const btnClearApiKey = document.getElementById('btnClearApiKey'); const inputApiKey = document.getElementById('inputApiKey');
+        if(btnApiKeyConfig) { btnApiKeyConfig.addEventListener('click', () => { inputApiKey.value = localStorage.getItem('gemini_api_key') || ''; if(apiKeyModal) apiKeyModal.classList.add('active'); }); }
+        if(btnCloseApiKeyModal) btnCloseApiKeyModal.addEventListener('click', () => { if(apiKeyModal) apiKeyModal.classList.remove('active'); });
+        if(btnSaveApiKey) { btnSaveApiKey.addEventListener('click', () => { const val = inputApiKey.value.trim(); if(val) { localStorage.setItem('gemini_api_key', val); alert('API Key 已安全儲存於本地！'); apiKeyModal.classList.remove('active'); } else { alert('請輸入有效的 API Key'); } }); }
+        if(btnClearApiKey) { btnClearApiKey.addEventListener('click', () => { localStorage.removeItem('gemini_api_key'); inputApiKey.value = ''; alert('API Key 已清除！'); }); }
+
+        const btnAiDiagnosis = document.getElementById('btnAiDiagnosis'); const aiModal = document.getElementById('aiModal'); const btnCloseModal = document.getElementById('btnCloseModal'); const aiLoading = document.getElementById('aiLoading'); const aiResult = document.getElementById('aiResult');
+        if(btnAiDiagnosis) { btnAiDiagnosis.addEventListener('click', async () => { if(aiModal) aiModal.classList.add('active'); let currentApiKey = localStorage.getItem('gemini_api_key') || ""; fetchGeminiDiagnosis(currentApiKey); }); }
+        if(btnCloseModal) btnCloseModal.addEventListener('click', () => { if(aiModal) aiModal.classList.remove('active'); });
+        if(aiModal) aiModal.addEventListener('click', (e) => { if (e.target === aiModal) aiModal.classList.remove('active'); });
+
+        async function fetchGeminiDiagnosis(apiKey) {
+            if(aiLoading) { aiLoading.classList.remove('hidden'); aiLoading.classList.add('flex'); } if(aiResult) { aiResult.classList.add('hidden'); aiResult.innerHTML = ''; }
+            const currentRatio = macroData.F63 !== null ? macroData.F63 : (globalCurrentLiabilities > 0 ? (portfolioSnapshot.cash + portfolioSnapshot.bond) / globalCurrentLiabilities : 0);
+            const debtRatio = portfolioSnapshot.totalAsset > 0 ? globalTotalDebt / portfolioSnapshot.totalAsset : 0;
+            const displayLevAmt = portfolioSnapshot.leverageAsset;
+            const levSafeRatio = macroData.S17 !== null ? macroData.S17 : ((portfolioSnapshot.cash + portfolioSnapshot.bond) > 0 ? displayLevAmt / (portfolioSnapshot.cash + portfolioSnapshot.bond) : 0);
+            
+            const promptText = `你現在是一位擁有 20 年資歷的頂尖特許金融分析師（CFA）。\n請根據以下使用者的最新財務數據，給出一份專業、簡明且客觀的「財務體質診斷報告」。\n【使用者當前財務數據】\n- 總資產：${fmtNum(portfolioSnapshot.totalAsset)} 元\n- 總負債：${fmtNum(globalTotalDebt)} 元\n- 股票資產：${fmtNum(portfolioSnapshot.stock)} 元\n- 債券資產：${fmtNum(portfolioSnapshot.bond)} 元\n- 現金儲備：${fmtNum(portfolioSnapshot.cash)} 元\n- 黃金資產：${fmtNum(portfolioSnapshot.gold)} 元\n- 槓桿(正2)資產：${fmtNum(displayLevAmt)} 元\n- 年化報酬率(CAGR/XIRR)：${fmtPct(portfolioSnapshot.cagr)}\n- 短期流動比率(現金+債券/流動負債)：${fmtPct(currentRatio)} (健康標準>300%)\n- 負債比率：${fmtPct(debtRatio)} (健康標準20%~50%)\n- 槓桿曝險佔比(正2資產/類現金)：${fmtPct(levSafeRatio)} (健康標準<100%)\n- 前幾大持股佔比：${portfolioSnapshot.topHoldingsNames.join(', ')}\n【輸出要求】\n1. 請以「理財小幫手」的口吻（專業、具同理心）給予評價。\n2. 結構必須包含：🌟 總體評價、⚠️ 風險提示、💡 具體建議。\n3. 內容請使用繁體中文（台灣習慣用語），不需要輸出Markdown的程式碼區塊符號。`;
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }], systemInstruction: { parts: [{ text: "You are a professional CFA financial advisor. Always respond in Traditional Chinese (zh-TW)." }] } }) });
+                if (!response.ok) { if (response.status === 400 || response.status === 403) { throw new Error("NEED_API_KEY"); } throw new Error(`API 請求失敗: 狀態碼 ${response.status}`); }
+                const result = await response.json(); const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) { displayDiagnosis(text); } else { throw new Error("無效的資料格式回傳"); }
+            } catch (error) {
+                if (error.message === "NEED_API_KEY") { if(aiModal) aiModal.classList.remove('active'); setTimeout(() => { if(apiKeyModal) apiKeyModal.classList.add('active'); }, 100); } 
+                else { if(aiLoading) { aiLoading.classList.remove('flex'); aiLoading.classList.add('hidden'); } if(aiResult) { aiResult.classList.remove('hidden'); aiResult.innerHTML = `<div class="p-4 bg-rose-50 text-rose-600 rounded-xl"><h3 class="font-bold flex items-center gap-2 mb-2"><i data-lucide="alert-triangle" class="w-5 h-5"></i> 診斷產生失敗</h3><p class="text-sm">${error.message}</p></div>`; } lucide.createIcons(); }
+            }
+        }
+        function displayDiagnosis(markdownText) {
+            if(aiLoading) { aiLoading.classList.remove('flex'); aiLoading.classList.add('hidden'); } if(aiResult) { aiResult.classList.remove('hidden'); }
+            let htmlContent = markdownText.replace(/^### (.*$)/gim, '<h3>$1</h3>').replace(/^## (.*$)/gim, '<h2>$1</h2>').replace(/^\* \*\*(.*?)\*\*(.*$)/gim, '<li><b>$1</b>$2</li>').replace(/^\- \*\*(.*?)\*\*(.*$)/gim, '<li><b>$1</b>$2</li>').replace(/^\* (.*$)/gim, '<li>$1</li>').replace(/^\- (.*$)/gim, '<li>$1</li>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>').replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
+            htmlContent = htmlContent.replace(/(<li>.*<\/li>)/gims, '<ul class="mt-2 mb-4">$1</ul>'); htmlContent = htmlContent.replace(/<\/ul>\s*<ul class="mt-2 mb-4">/gims, '');
+            if(aiResult) aiResult.innerHTML = `<p>${htmlContent}</p>`;
+        }
+
+        // 啟動邏輯：檢查快取
+        window.onload = function() {
+            initCharts();
+            let cachedFile = localStorage.getItem('cfa_excel_cache');
+            if (cachedFile) {
+                try {
+                    let buffer = base64ToArrayBuffer(cachedFile);
+                    parseExcelBuffer(buffer);
+                    document.getElementById('statusTag').innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i> 已載入本機記憶';
+                    document.getElementById('statusTag').className = 'px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-sm font-medium flex items-center gap-1';
+                    document.getElementById('btnClearCache').classList.remove('hidden');
+                    lucide.createIcons();
+                } catch(e) {
+                    console.error("快取讀取失敗，需重新上傳:", e);
+                    localStorage.removeItem('cfa_excel_cache');
+                }
+            }
+        };
+    </script>
+</body>
+</html>
