@@ -67,13 +67,12 @@
     </style>
 </head>
 <body class="text-slate-800 transition-all duration-300 relative">
-    <!-- 【解封寬度】：放大至 1600px 滿版適應橫向螢幕 -->
     <div id="dashboard-content" class="w-full max-w-[1600px] mx-auto px-4 py-8 bg-slate-50 transition-all duration-300">
         <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
                 <h1 class="text-3xl font-bold text-slate-900 flex items-center gap-2">
                     <i data-lucide="layout-dashboard" class="text-indigo-600"></i>
-                    個人財務儀表板 <span class="text-sm bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full ml-2 hidden md:inline-block">V2.6.2 混合雙引擎版</span>
+                    個人財務儀表板 <span class="text-sm bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full ml-2 hidden md:inline-block">V2.6.4 修復版</span>
                 </h1>
                 <p class="text-slate-500 mt-1">更新日期：<span id="valUpdateDate">請上傳 Excel 檔案</span> | 追蹤檔數：<span id="valHoldingsCount">--</span> 檔</p>
             </div>
@@ -99,14 +98,12 @@
         <section class="mb-8">
             <h2 class="text-xl font-semibold mb-4 flex items-center gap-2 border-b pb-2"><i data-lucide="globe" class="text-indigo-500 w-5 h-5"></i> 核心戰情區 (Macro Overview)</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <!-- 【字體美化】：套用漸層金屬光澤字體 -->
                 <div class="glass-card border-l-4 border-indigo-500">
                     <p class="text-sm text-slate-500 mb-1">累計總資產</p>
                     <h3 id="valTotalAsset" class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600 drop-shadow-sm mt-1 mb-2">NT$ 0</h3>
                     <div class="mt-2 text-sm flex justify-between"><span class="text-slate-500">總成本</span><span id="valTotalCost" class="font-medium">0</span></div>
                     <div class="mt-1 text-sm flex justify-between"><span class="text-slate-500">總負債</span><span id="valTotalDebtMacro" class="font-medium text-emerald-500">0</span></div>
                 </div>
-                <!-- 【膠囊標籤】：報酬率與CAGR改為 Badge 形式 -->
                 <div class="glass-card border-l-4 border-slate-300" id="cardAccumulated">
                     <p class="text-sm text-slate-500 mb-1">累積報酬 (全期)</p>
                     <h3 id="valAccumulatedProfit" class="text-2xl font-bold text-slate-600 mt-1 mb-3">NT$ 0</h3>
@@ -676,8 +673,9 @@
                     datasets: [
                         { label: '總資產 (萬)', data: [], borderColor: '#6366f1', fill: true, backgroundColor: 'rgba(99, 102, 241, 0.1)', tension: 0.4, yAxisID: 'y' }, 
                         { label: '大盤對照', data: [], borderColor: '#cbd5e1', borderDash: [5, 5], fill: false, tension: 0.4, yAxisID: 'y' },
-                        { label: '駿利平衡基金', data: [], borderColor: '#f59e0b', fill: false, tension: 0.4, yAxisID: 'y1', spanGaps: true },
-                        { label: '0050 ETF', data: [], borderColor: '#10b981', fill: false, tension: 0.4, yAxisID: 'y1', spanGaps: true }
+                        // 【V2.6.3 升級】：將基金資料強制綁定 yAxisID: 'y'，確保縮放比例與總資產完全一致
+                        { label: '駿利平衡基金 (趨勢對齊)', data: [], borderColor: '#f59e0b', fill: false, tension: 0.4, yAxisID: 'y', spanGaps: true },
+                        { label: '0050 ETF (趨勢對齊)', data: [], borderColor: '#10b981', fill: false, tension: 0.4, yAxisID: 'y', spanGaps: true }
                     ] 
                 }, 
                 options: { 
@@ -709,7 +707,7 @@
                         },
                         y1: { 
                             type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false },
-                            ticks: { display: false }, // 隱藏右軸數字，只留趨勢線
+                            ticks: { display: false }, // 隱藏右軸數字，保留空軸以維持版面對稱
                             afterFit: (scale) => { scale.width = 30; } // 鎖定右側寬度
                         }
                     }
@@ -1229,6 +1227,20 @@
                 };
             });
             
+            // --- 【V2.6.4 修復】：重新填入標的放大鏡下拉選單 ---
+            const inspectSelect = document.getElementById('inspectStockSelect');
+            if (inspectSelect) {
+                inspectSelect.innerHTML = '<option value="">請選擇要檢視的標的...</option>';
+                // 複製陣列並依照市值由大到小排序放入下拉選單
+                [...window.consolidatedHoldings].sort((a, b) => b.marketVal - a.marketVal).forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.name;
+                    opt.text = item.name;
+                    inspectSelect.appendChild(opt);
+                });
+            }
+            // ---------------------------------------------------
+            
             renderLedgerTable();
             return displayTotalAsset;
         }
@@ -1579,12 +1591,38 @@
             }
 
             // 更新上方折線圖
-            charts.trend.data.labels = displayLabels; charts.trend.data.datasets[0].data = displayValues; charts.trend.data.datasets[2].data = displayFundA; charts.trend.data.datasets[3].data = displayFundB;
+            charts.trend.data.labels = displayLabels; 
+            charts.trend.data.datasets[0].data = displayValues; 
+            
             if (displayValues.length > 0) {
                 const baseVal = displayValues[0];
                 const rate = type === 'yearly' ? Math.pow(1.015, 12) : (type === 'quarterly' ? Math.pow(1.015, 3) : 1.015);
                 const benchmark = displayValues.map((_, idx) => baseVal * Math.pow(rate, idx));
                 charts.trend.data.datasets[1].data = benchmark;
+
+                // 【V2.6.3 基準點對齊邏輯 (Rebasing/Normalization)】
+                // 找出該期間內，第一筆有意義的基金資料，並將其放大/縮小對齊至此時的總資產
+                let firstIdxA = displayFundA.findIndex(val => val !== null && val > 0);
+                let firstIdxB = displayFundB.findIndex(val => val !== null && val > 0);
+
+                let normalizedFundA = displayFundA.map((val, idx) => {
+                    if (val === null || firstIdxA === -1) return null;
+                    let alignBase = displayValues[firstIdxA]; 
+                    return val * (alignBase / displayFundA[firstIdxA]);
+                });
+
+                let normalizedFundB = displayFundB.map((val, idx) => {
+                    if (val === null || firstIdxB === -1) return null;
+                    let alignBase = displayValues[firstIdxB]; 
+                    return val * (alignBase / displayFundB[firstIdxB]);
+                });
+
+                charts.trend.data.datasets[2].data = normalizedFundA;
+                charts.trend.data.datasets[3].data = normalizedFundB;
+            } else {
+                charts.trend.data.datasets[1].data = [];
+                charts.trend.data.datasets[2].data = [];
+                charts.trend.data.datasets[3].data = [];
             }
             charts.trend.update();
 
@@ -1607,12 +1645,12 @@
                 ignores.forEach(el => { el.dataset.origDisplay = window.getComputedStyle(el).display; el.style.display = 'none'; });
 
                 const pdfHeader = document.createElement('div'); pdfHeader.id = 'temp-pdf-header';
-                pdfHeader.innerHTML = `<div style="text-align: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0; page-break-inside: avoid; break-inside: avoid;"><h1 style="font-size: 26px; font-weight: bold; color: #1e293b; margin: 0;">個人財務績效報告</h1><p style="font-size: 13px; color: #64748b; margin-top: 6px;">CFA 理財小幫手 | 匯出時間：${new Date().toLocaleString('zh-TW')} | 報告版本：V2.6.2</p></div>`;
+                pdfHeader.innerHTML = `<div style="text-align: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0; page-break-inside: avoid; break-inside: avoid;"><h1 style="font-size: 26px; font-weight: bold; color: #1e293b; margin: 0;">個人財務績效報告</h1><p style="font-size: 13px; color: #64748b; margin-top: 6px;">CFA 理財小幫手 | 匯出時間：${new Date().toLocaleString('zh-TW')} | 報告版本：V2.6.4</p></div>`;
                 content.insertBefore(pdfHeader, content.firstChild);
 
                 await new Promise(resolve => setTimeout(resolve, 300));
                 const updateDateText = (document.getElementById('valUpdateDate')?.innerText || '最新').replace(/[\/:*?"<>|]/g, '');
-                const filename = `財務績效報告_V2.6.2_${updateDateText}.pdf`;
+                const filename = `財務績效報告_V2.6.4_${updateDateText}.pdf`;
 
                 const opt = { margin: [10, 10, 15, 10], filename: filename, image: { type: 'jpeg', quality: 1.0 }, html2canvas: { scale: 2, useCORS: true, scrollY: 0, backgroundColor: '#f8fafc' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['.glass-card', '#temp-pdf-header'] } };
                 await html2pdf().set(opt).from(content).toPdf().get('pdf').then(function (pdf) {
