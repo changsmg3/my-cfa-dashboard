@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>CFA 財務儀表板</title>
     
     <!-- PWA 專屬設定 -->
@@ -67,7 +67,7 @@
     </style>
 </head>
 <body class="text-slate-800 transition-all duration-300 relative">
-    <div id="dashboard-content" class="max-w-7xl mx-auto px-4 py-8 bg-slate-50 transition-all duration-300">
+    <div id="dashboard-content" class="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-slate-50 transition-all duration-300">
         <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
                 <h1 class="text-3xl font-bold text-slate-900 flex items-center gap-2">
@@ -101,24 +101,24 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div class="glass-card border-l-4 border-indigo-500">
                     <p class="text-sm text-slate-500 mb-1">累計總資產</p>
-                    <h3 id="valTotalAsset" class="text-2xl font-bold text-slate-900">NT$ 0</h3>
-                    <div class="mt-2 text-sm flex justify-between"><span class="text-slate-500">總成本</span><span id="valTotalCost" class="font-medium">0</span></div>
-                    <div class="mt-1 text-sm flex justify-between"><span class="text-slate-500">總負債</span><span id="valTotalDebtMacro" class="font-medium text-emerald-500">0</span></div>
+                    <h3 id="valTotalAsset" class="text-[1.75rem] leading-tight font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-500 drop-shadow-sm tracking-tight">NT$ 0</h3>
+                    <div class="mt-2 text-sm flex justify-between"><span class="text-slate-500">總成本</span><span id="valTotalCost" class="font-semibold text-slate-700">0</span></div>
+                    <div class="mt-1 text-sm flex justify-between"><span class="text-slate-500">總負債</span><span id="valTotalDebtMacro" class="font-bold text-emerald-500">0</span></div>
                 </div>
                 <div class="glass-card border-l-4 border-slate-300" id="cardAccumulated">
                     <p class="text-sm text-slate-500 mb-1">累積報酬 (全期)</p>
-                    <h3 id="valAccumulatedProfit" class="text-2xl font-bold text-slate-600">NT$ 0</h3>
-                    <div class="mt-2 text-sm flex justify-between"><span class="text-slate-500">累積報酬率</span><span id="valAccumulatedRate" class="font-medium text-slate-600">0.00%</span></div>
-                    <div class="mt-1 text-sm flex justify-between"><span id="labelCagr" class="text-slate-500">年化報酬率</span><span id="valCagr" class="font-medium text-slate-600">未計算</span></div>
+                    <h3 id="valAccumulatedProfit" class="text-[1.75rem] leading-tight font-black text-slate-600 tracking-tight">NT$ 0</h3>
+                    <div class="mt-2 text-sm flex justify-between items-center"><span class="text-slate-500">累積報酬率</span><span id="valAccumulatedRate" class="font-medium text-slate-600">0.00%</span></div>
+                    <div class="mt-1 text-sm flex justify-between items-center"><span id="labelCagr" class="text-slate-500">年化報酬率</span><span id="valCagr" class="font-medium text-slate-600">未計算</span></div>
                 </div>
                 <div class="glass-card border-l-4 border-blue-500">
                     <p class="text-sm text-slate-500 mb-1">今年以來績效 (YTD)</p>
-                    <h3 id="valYtdProfit" class="text-2xl font-bold text-slate-600">NT$ --</h3>
-                    <div class="mt-2 text-sm flex justify-between"><span class="text-slate-500">今年期初資產</span><span id="valYtdBase" class="font-medium">--</span></div>
-                    <div class="mt-1 text-sm flex justify-between"><span class="text-slate-500">今年報酬率</span><span id="valYtdRate" class="font-medium text-slate-600">--%</span></div>
+                    <h3 id="valYtdProfit" class="text-[1.75rem] leading-tight font-black text-slate-600 tracking-tight">NT$ --</h3>
+                    <div class="mt-2 text-sm flex justify-between items-center"><span class="text-slate-500">今年期初資產</span><span id="valYtdBase" class="font-semibold text-slate-700">--</span></div>
+                    <div class="mt-1 text-sm flex justify-between items-center"><span class="text-slate-500">今年報酬率</span><span id="valYtdRate" class="font-medium text-slate-600">--%</span></div>
                 </div>
-                <div class="glass-card flex flex-col items-center">
-                    <p class="text-sm text-slate-500 mb-2 self-start">資產配置 (Allocation)</p>
+                <div class="glass-card flex flex-col items-center justify-center">
+                    <p class="text-sm text-slate-500 mb-2 self-start font-medium">資產配置 (Allocation)</p>
                     <div class="h-32 w-full relative"><canvas id="assetAllocationChart"></canvas></div>
                 </div>
             </div>
@@ -994,13 +994,13 @@
             
             if (valAcc) {
                 valAcc.innerText = (accProfit >= 0 ? '+ ' : '- ') + 'NT$ ' + fmtNum(Math.abs(accProfit));
-                valAcc.className = `text-2xl font-bold ${accProfit >= 0 ? 'text-rose-600' : 'text-emerald-600'}`;
+                valAcc.className = `text-[1.75rem] leading-tight font-black tracking-tight drop-shadow-sm ${accProfit >= 0 ? 'text-rose-500' : 'text-emerald-500'}`;
             }
             if (rateAcc) {
                 rateAcc.innerText = (accProfit >= 0 ? '+' : '') + fmtPct(accRate);
-                rateAcc.className = `font-medium ${accProfit >= 0 ? 'text-rose-600' : 'text-emerald-600'}`;
+                rateAcc.className = `font-bold text-sm px-1.5 py-0.5 rounded shadow-sm ${accProfit >= 0 ? 'text-rose-600 bg-rose-50 border border-rose-100' : 'text-emerald-600 bg-emerald-50 border border-emerald-100'}`;
             }
-            if (cardAcc) cardAcc.className = `glass-card border-l-4 border-slate-300`;
+            if (cardAcc) cardAcc.className = `glass-card border-l-4 ${accProfit >= 0 ? 'border-rose-400' : 'border-emerald-400'}`;
 
             const ytdBase = macroData.S13 !== null ? macroData.S13 : globalYtdBase;
             const ytdProfit = macroData.S14 !== null ? macroData.S14 : (displayTotalAsset - ytdBase);
@@ -1012,17 +1012,17 @@
             if (elYtdBase) elYtdBase.innerText = fmtNum(ytdBase);
             if (elYtdProfit) {
                 elYtdProfit.innerText = (ytdProfit >= 0 ? '+ ' : '- ') + 'NT$ ' + fmtNum(Math.abs(ytdProfit));
-                elYtdProfit.className = `text-2xl font-bold ${ytdProfit >= 0 ? 'text-rose-600' : 'text-emerald-600'}`;
+                elYtdProfit.className = `text-[1.75rem] leading-tight font-black tracking-tight drop-shadow-sm ${ytdProfit >= 0 ? 'text-rose-500' : 'text-emerald-500'}`;
             }
             if (elYtdRate) {
                 elYtdRate.innerText = (ytdProfit >= 0 ? '+' : '') + fmtPct(ytdRate);
-                elYtdRate.className = `font-medium ${ytdProfit >= 0 ? 'text-rose-600' : 'text-emerald-600'}`;
+                elYtdRate.className = `font-bold text-sm px-1.5 py-0.5 rounded shadow-sm ${ytdProfit >= 0 ? 'text-rose-600 bg-rose-50 border border-rose-100' : 'text-emerald-600 bg-emerald-50 border border-emerald-100'}`;
             }
 
             const elCagr = document.getElementById('valCagr');
             if (elCagr) {
                 elCagr.innerText = (cagr >= 0 ? '+' : '') + fmtPct(cagr);
-                elCagr.className = `font-medium ${cagr >= 0 ? 'text-rose-600' : 'text-emerald-600'}`;
+                elCagr.className = `font-bold text-sm px-1.5 py-0.5 rounded shadow-sm ${cagr >= 0 ? 'text-rose-600 bg-rose-50 border border-rose-100' : 'text-emerald-600 bg-emerald-50 border border-emerald-100'}`;
             }
 
             const sorted = Array.from(hMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
