@@ -67,12 +67,13 @@
     </style>
 </head>
 <body class="text-slate-800 transition-all duration-300 relative">
-    <div id="dashboard-content" class="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-slate-50 transition-all duration-300">
+    <!-- 【解封寬度】：放大至 1600px 滿版適應橫向螢幕 -->
+    <div id="dashboard-content" class="w-full max-w-[1600px] mx-auto px-4 py-8 bg-slate-50 transition-all duration-300">
         <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
                 <h1 class="text-3xl font-bold text-slate-900 flex items-center gap-2">
                     <i data-lucide="layout-dashboard" class="text-indigo-600"></i>
-                    個人財務儀表板 <span class="text-sm bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full ml-2 hidden md:inline-block">V2.3.0 PWA快取版</span>
+                    個人財務儀表板 <span class="text-sm bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full ml-2 hidden md:inline-block">V2.6.2 混合雙引擎版</span>
                 </h1>
                 <p class="text-slate-500 mt-1">更新日期：<span id="valUpdateDate">請上傳 Excel 檔案</span> | 追蹤檔數：<span id="valHoldingsCount">--</span> 檔</p>
             </div>
@@ -81,7 +82,6 @@
                     <i data-lucide="info" class="w-4 h-4"></i> 等待上傳...
                 </span>
                 
-                <!-- 新增：清除本地快取按鈕 -->
                 <button id="btnClearCache" class="px-3 py-1 bg-rose-50 border border-rose-200 text-rose-600 rounded-full text-sm font-medium flex items-center gap-1 hover:bg-rose-100 transition-colors shadow-sm hidden" title="清除本機記憶資料">
                     <i data-lucide="trash-2" class="w-4 h-4"></i> 清除暫存
                 </button>
@@ -99,26 +99,28 @@
         <section class="mb-8">
             <h2 class="text-xl font-semibold mb-4 flex items-center gap-2 border-b pb-2"><i data-lucide="globe" class="text-indigo-500 w-5 h-5"></i> 核心戰情區 (Macro Overview)</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <!-- 【字體美化】：套用漸層金屬光澤字體 -->
                 <div class="glass-card border-l-4 border-indigo-500">
                     <p class="text-sm text-slate-500 mb-1">累計總資產</p>
-                    <h3 id="valTotalAsset" class="text-[1.75rem] leading-tight font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-500 drop-shadow-sm tracking-tight">NT$ 0</h3>
-                    <div class="mt-2 text-sm flex justify-between"><span class="text-slate-500">總成本</span><span id="valTotalCost" class="font-semibold text-slate-700">0</span></div>
-                    <div class="mt-1 text-sm flex justify-between"><span class="text-slate-500">總負債</span><span id="valTotalDebtMacro" class="font-bold text-emerald-500">0</span></div>
+                    <h3 id="valTotalAsset" class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600 drop-shadow-sm mt-1 mb-2">NT$ 0</h3>
+                    <div class="mt-2 text-sm flex justify-between"><span class="text-slate-500">總成本</span><span id="valTotalCost" class="font-medium">0</span></div>
+                    <div class="mt-1 text-sm flex justify-between"><span class="text-slate-500">總負債</span><span id="valTotalDebtMacro" class="font-medium text-emerald-500">0</span></div>
                 </div>
+                <!-- 【膠囊標籤】：報酬率與CAGR改為 Badge 形式 -->
                 <div class="glass-card border-l-4 border-slate-300" id="cardAccumulated">
                     <p class="text-sm text-slate-500 mb-1">累積報酬 (全期)</p>
-                    <h3 id="valAccumulatedProfit" class="text-[1.75rem] leading-tight font-black text-slate-600 tracking-tight">NT$ 0</h3>
-                    <div class="mt-2 text-sm flex justify-between items-center"><span class="text-slate-500">累積報酬率</span><span id="valAccumulatedRate" class="font-medium text-slate-600">0.00%</span></div>
-                    <div class="mt-1 text-sm flex justify-between items-center"><span id="labelCagr" class="text-slate-500">年化報酬率</span><span id="valCagr" class="font-medium text-slate-600">未計算</span></div>
+                    <h3 id="valAccumulatedProfit" class="text-2xl font-bold text-slate-600 mt-1 mb-3">NT$ 0</h3>
+                    <div class="mt-2 text-sm flex justify-between items-center"><span class="text-slate-500">累積報酬率</span><span id="valAccumulatedRate" class="px-2 py-0.5 rounded-full text-sm font-bold bg-slate-100 text-slate-600">0.00%</span></div>
+                    <div class="mt-2 text-sm flex justify-between items-center"><span id="labelCagr" class="text-slate-500">年化報酬率</span><span id="valCagr" class="px-2 py-0.5 rounded-full text-sm font-bold bg-slate-100 text-slate-600">未計算</span></div>
                 </div>
                 <div class="glass-card border-l-4 border-blue-500">
                     <p class="text-sm text-slate-500 mb-1">今年以來績效 (YTD)</p>
-                    <h3 id="valYtdProfit" class="text-[1.75rem] leading-tight font-black text-slate-600 tracking-tight">NT$ --</h3>
-                    <div class="mt-2 text-sm flex justify-between items-center"><span class="text-slate-500">今年期初資產</span><span id="valYtdBase" class="font-semibold text-slate-700">--</span></div>
-                    <div class="mt-1 text-sm flex justify-between items-center"><span class="text-slate-500">今年報酬率</span><span id="valYtdRate" class="font-medium text-slate-600">--%</span></div>
+                    <h3 id="valYtdProfit" class="text-2xl font-bold text-slate-600 mt-1 mb-3">NT$ --</h3>
+                    <div class="mt-2 text-sm flex justify-between items-center"><span class="text-slate-500">今年期初資產</span><span id="valYtdBase" class="font-medium">--</span></div>
+                    <div class="mt-2 text-sm flex justify-between items-center"><span class="text-slate-500">今年報酬率</span><span id="valYtdRate" class="px-2 py-0.5 rounded-full text-sm font-bold bg-slate-100 text-slate-600">--%</span></div>
                 </div>
-                <div class="glass-card flex flex-col items-center justify-center">
-                    <p class="text-sm text-slate-500 mb-2 self-start font-medium">資產配置 (Allocation)</p>
+                <div class="glass-card flex flex-col items-center">
+                    <p class="text-sm text-slate-500 mb-2 self-start">資產配置 (Allocation)</p>
                     <div class="h-32 w-full relative"><canvas id="assetAllocationChart"></canvas></div>
                 </div>
             </div>
@@ -159,17 +161,21 @@
             <div class="html2pdf__page-break"></div>
 
             <div class="grid grid-cols-1 gap-6 mb-6">
-                <div class="glass-card overflow-hidden">
+                <!-- 【子母圖】：上下切割版面，滑鼠懸浮互動同步 -->
+                <div class="glass-card overflow-hidden" id="trendContainer">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-medium text-slate-800">資產累積趨勢圖</h3>
-                        <select id="timeframeSelect" class="text-sm border rounded px-2 py-1 text-slate-600 bg-slate-50" data-html2canvas-ignore="true">
+                        <h3 class="font-medium text-slate-800 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-indigo-500"></i> 總資產與市場損益連動趨勢 (Sub-charts)</h3>
+                        <select id="timeframeSelect" class="text-sm border rounded px-2 py-1 text-slate-600 bg-slate-50 focus:outline-none focus:border-indigo-400" data-html2canvas-ignore="true">
                             <option value="monthly">按月顯示</option>
                             <option value="quarterly">按季顯示</option>
                             <option value="yearly">按年顯示</option>
                             <option value="ytd">今年起顯示 (YTD)</option>
                         </select>
                     </div>
+                    <!-- 上半部：資產折線圖 -->
                     <div class="h-64 w-full relative"><canvas id="assetTrendChart"></canvas></div>
+                    <!-- 下半部：損益直方圖 -->
+                    <div class="h-32 w-full relative mt-2"><canvas id="pnlBarChart"></canvas></div>
                 </div>
             </div>
         </section>
@@ -484,7 +490,8 @@
         
         let charts = {};
         let portfolioSnapshot = { totalAsset: 0, totalDebt: 0, currentLiabilities: 0, cash: 0, bond: 0, stock: 0, gold: 0, leverageAsset: 0, ytdRate: 0, cagr: 0, topHoldingsNames: [] };
-        let globalTrendData = { labels: [], values: [], fundA: [], fundB: [] };
+        // 新增 pnl 陣列存放市場損益
+        let globalTrendData = { labels: [], values: [], fundA: [], fundB: [], pnl: [] };
         let macroData = { S7: null, S9: null, S10: null, S11: null, S12: null, S13: null, S14: null, S15: null, F63: null, S17: null };
         let heatmapData = {};
         let assetHistory = {}; 
@@ -523,7 +530,7 @@
             return v;
         }
 
-        // Base64 轉換工具 (用於將 Excel 快取在本地)
+        // Base64 轉換工具
         function arrayBufferToBase64(buffer) {
             let binary = '';
             let bytes = new Uint8Array(buffer);
@@ -538,6 +545,25 @@
             let bytes = new Uint8Array(len);
             for (let i = 0; i < len; i++) { bytes[i] = binary_string.charCodeAt(i); }
             return bytes.buffer;
+        }
+
+        // 【同步機制核心】：動態將游標與 Active Elements 映射到目標圖表
+        function syncChartHover(e, activeEls, targetChart) {
+            if (activeEls.length > 0) {
+                const idx = activeEls[0].index;
+                const meta = targetChart.getDatasetMeta(0);
+                if (meta && meta.data[idx]) {
+                    const el = meta.data[idx];
+                    const pos = el.tooltipPosition ? el.tooltipPosition() : el.getCenterPoint();
+                    targetChart.tooltip.setActiveElements([{ datasetIndex: 0, index: idx }], pos);
+                    targetChart.setActiveElements([{ datasetIndex: 0, index: idx }]);
+                    targetChart.update();
+                }
+            } else {
+                targetChart.setActiveElements([]);
+                targetChart.tooltip.setActiveElements([]);
+                targetChart.update();
+            }
         }
 
         function initCharts() {
@@ -641,12 +667,14 @@
                     } 
                 } 
             });
+
+            // 【子母圖】：上方折線圖
             charts.trend = new Chart(document.getElementById('assetTrendChart').getContext('2d'), { 
                 type: 'line', 
                 data: { 
                     labels: [], 
                     datasets: [
-                        { label: '總資產 (萬)', data: [], borderColor: '#6366f1', fill: true, tension: 0.4, yAxisID: 'y' }, 
+                        { label: '總資產 (萬)', data: [], borderColor: '#6366f1', fill: true, backgroundColor: 'rgba(99, 102, 241, 0.1)', tension: 0.4, yAxisID: 'y' }, 
                         { label: '大盤對照', data: [], borderColor: '#cbd5e1', borderDash: [5, 5], fill: false, tension: 0.4, yAxisID: 'y' },
                         { label: '駿利平衡基金', data: [], borderColor: '#f59e0b', fill: false, tension: 0.4, yAxisID: 'y1', spanGaps: true },
                         { label: '0050 ETF', data: [], borderColor: '#10b981', fill: false, tension: 0.4, yAxisID: 'y1', spanGaps: true }
@@ -654,12 +682,105 @@
                 }, 
                 options: { 
                     maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    onHover: (e, activeEls, chart) => {
+                        if(charts.pnl) syncChartHover(e, activeEls, charts.pnl);
+                    },
+                    layout: { padding: { bottom: 0, left: 0, right: 0 } }, 
+                    plugins: {
+                        legend: { position: 'top', align: 'end', labels: { boxWidth: 12, usePointStyle: true, pointStyle: 'rectRounded' } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 1 }).format(context.raw);
+                                }
+                            }
+                        }
+                    },
                     scales: {
-                        y: { type: 'linear', display: true, position: 'left' },
-                        y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false } }
+                        x: {
+                            ticks: { display: false }, // 隱藏上方 X 軸文字，與下方直方圖共用
+                            grid: { drawBorder: false },
+                            offset: true // 【策略 A 實作】：開啟向內縮，與下方直方圖柱體中心完美對齊
+                        },
+                        y: { 
+                            type: 'linear', display: true, position: 'left',
+                            afterFit: (scale) => { scale.width = 65; } // 【強制對齊】：鎖定寬度為 65px
+                        },
+                        y1: { 
+                            type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false },
+                            ticks: { display: false }, // 隱藏右軸數字，只留趨勢線
+                            afterFit: (scale) => { scale.width = 30; } // 鎖定右側寬度
+                        }
                     }
                 } 
             });
+
+            // 【子母圖】：下方直方圖 (損益)
+            charts.pnl = new Chart(document.getElementById('pnlBarChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '市場損益 (萬)',
+                        data: [],
+                        backgroundColor: (ctx) => {
+                            const val = ctx.raw || 0;
+                            return val >= 0 ? 'rgba(244, 63, 94, 0.85)' : 'rgba(16, 185, 129, 0.85)'; // 賺紅賠綠
+                        },
+                        borderRadius: 4,
+                        hoverBackgroundColor: (ctx) => {
+                            const val = ctx.raw || 0;
+                            return val >= 0 ? 'rgba(225, 29, 72, 1)' : 'rgba(5, 150, 105, 1)';
+                        }
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    onHover: (e, activeEls, chart) => {
+                        if(charts.trend) syncChartHover(e, activeEls, charts.trend);
+                    },
+                    layout: { padding: { top: 0, left: 0, right: 0 } },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let val = context.raw;
+                                    let sign = val > 0 ? '+' : '';
+                                    return context.dataset.label + ': ' + sign + new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 1 }).format(val);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false }
+                        },
+                        y: {
+                            type: 'linear', position: 'left',
+                            afterFit: (scale) => { scale.width = 65; }, // 【強制對齊】：必須與上方圖表設定完全相同
+                            ticks: {
+                                callback: function(value) { return value > 0 ? '+'+value : value; },
+                                maxTicksLimit: 5
+                            }
+                        },
+                        y1: { 
+                            type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false },
+                            ticks: { display: false }, 
+                            afterFit: (scale) => { scale.width = 30; } // 對齊上方的隱藏右軸
+                        }
+                    }
+                }
+            });
+
+            // 【防呆設計】：當滑鼠離開整個圖表區時，清除兩張圖的 Tooltip
+            document.getElementById('trendContainer').addEventListener('mouseleave', () => {
+                if(charts.trend) { charts.trend.setActiveElements([]); charts.trend.tooltip.setActiveElements([]); charts.trend.update(); }
+                if(charts.pnl) { charts.pnl.setActiveElements([]); charts.pnl.tooltip.setActiveElements([]); charts.pnl.update(); }
+            });
+
             charts.strategy = new Chart(document.getElementById('strategyChart').getContext('2d'), { type: 'bar', data: { labels: [], datasets: [{ data: [] }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } } } });
             charts.fx = new Chart(document.getElementById('fxChart').getContext('2d'), { type: 'pie', data: { labels: [], datasets: [{ data: [] }] }, options: { maintainAspectRatio: false, title: { display: true, text: '幣別' }, plugins: { datalabels: datalabelsInt, tooltip: tooltipFormat, legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } } });
             charts.account = new Chart(document.getElementById('accountChart').getContext('2d'), { type: 'pie', data: { labels: [], datasets: [{ data: [] }] }, options: { maintainAspectRatio: false, plugins: { datalabels: datalabelsInt, tooltip: tooltipFormat, legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } } });
@@ -725,7 +846,6 @@
             }
         });
 
-        // 核心解析邏輯抽取 (供上傳與快取共用)
         function parseExcelBuffer(buffer) {
             try {
                 const data = new Uint8Array(buffer);
@@ -772,6 +892,7 @@
                     let trendValues = [];
                     let trendFundA = [];
                     let trendFundB = [];
+                    let trendPnl = []; // 抓取 I 欄市場損益
                     
                     let maxYM = 999999;
                     const today = new Date();
@@ -803,6 +924,7 @@
                             let mo = dateStr.substring(3, 5);
 
                             let ttVal = row.H; 
+                            let pnlVal = row.I; // 取得市場損益
                             let tPctVal = row.J; 
                             let fundAVal = row.M;
                             let fundBVal = row.N;
@@ -822,12 +944,13 @@
                                     trendValues.push(parseNum(ttVal) / 10000); 
                                     trendFundA.push(fundAVal !== undefined && fundAVal !== '' ? parseNum(fundAVal) : null);
                                     trendFundB.push(fundBVal !== undefined && fundBVal !== '' ? parseNum(fundBVal) : null);
+                                    trendPnl.push(pnlVal !== undefined && pnlVal !== '' ? parseNum(pnlVal) : 0);
                                 }
                             }
                         }
                     });
                     
-                    globalTrendData = { labels: trendLabels, values: trendValues, fundA: trendFundA, fundB: trendFundB };
+                    globalTrendData = { labels: trendLabels, values: trendValues, fundA: trendFundA, fundB: trendFundB, pnl: trendPnl };
                     
                     const rowsArr = XLSX.utils.sheet_to_json(dataSheet, {header: 1});
                     extractRiskMetrics(rowsArr);
@@ -870,7 +993,6 @@
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                // 將 Excel 檔案轉成 Base64 永久存在瀏覽器中
                 try {
                     const base64String = arrayBufferToBase64(e.target.result);
                     localStorage.setItem('cfa_excel_cache', base64String);
@@ -888,7 +1010,6 @@
             reader.readAsArrayBuffer(file);
         });
 
-        // 清除快取按鈕邏輯
         document.getElementById('btnClearCache').addEventListener('click', function() {
             if(confirm('確定要清除本機記憶的 Excel 資料嗎？（清除後需重新上傳檔案）')) {
                 localStorage.removeItem('cfa_excel_cache');
@@ -994,13 +1115,12 @@
             
             if (valAcc) {
                 valAcc.innerText = (accProfit >= 0 ? '+ ' : '- ') + 'NT$ ' + fmtNum(Math.abs(accProfit));
-                valAcc.className = `text-[1.75rem] leading-tight font-black tracking-tight drop-shadow-sm ${accProfit >= 0 ? 'text-rose-500' : 'text-emerald-500'}`;
+                valAcc.className = `text-2xl font-bold mt-1 mb-3 ${accProfit >= 0 ? 'text-rose-600' : 'text-emerald-600'}`;
             }
             if (rateAcc) {
                 rateAcc.innerText = (accProfit >= 0 ? '+' : '') + fmtPct(accRate);
-                rateAcc.className = `font-bold text-sm px-1.5 py-0.5 rounded shadow-sm ${accProfit >= 0 ? 'text-rose-600 bg-rose-50 border border-rose-100' : 'text-emerald-600 bg-emerald-50 border border-emerald-100'}`;
+                rateAcc.className = `px-2 py-0.5 rounded-full text-sm font-bold ${accProfit >= 0 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`;
             }
-            if (cardAcc) cardAcc.className = `glass-card border-l-4 ${accProfit >= 0 ? 'border-rose-400' : 'border-emerald-400'}`;
 
             const ytdBase = macroData.S13 !== null ? macroData.S13 : globalYtdBase;
             const ytdProfit = macroData.S14 !== null ? macroData.S14 : (displayTotalAsset - ytdBase);
@@ -1012,17 +1132,17 @@
             if (elYtdBase) elYtdBase.innerText = fmtNum(ytdBase);
             if (elYtdProfit) {
                 elYtdProfit.innerText = (ytdProfit >= 0 ? '+ ' : '- ') + 'NT$ ' + fmtNum(Math.abs(ytdProfit));
-                elYtdProfit.className = `text-[1.75rem] leading-tight font-black tracking-tight drop-shadow-sm ${ytdProfit >= 0 ? 'text-rose-500' : 'text-emerald-500'}`;
+                elYtdProfit.className = `text-2xl font-bold mt-1 mb-3 ${ytdProfit >= 0 ? 'text-rose-600' : 'text-emerald-600'}`;
             }
             if (elYtdRate) {
                 elYtdRate.innerText = (ytdProfit >= 0 ? '+' : '') + fmtPct(ytdRate);
-                elYtdRate.className = `font-bold text-sm px-1.5 py-0.5 rounded shadow-sm ${ytdProfit >= 0 ? 'text-rose-600 bg-rose-50 border border-rose-100' : 'text-emerald-600 bg-emerald-50 border border-emerald-100'}`;
+                elYtdRate.className = `px-2 py-0.5 rounded-full text-sm font-bold ${ytdProfit >= 0 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`;
             }
 
             const elCagr = document.getElementById('valCagr');
             if (elCagr) {
                 elCagr.innerText = (cagr >= 0 ? '+' : '') + fmtPct(cagr);
-                elCagr.className = `font-bold text-sm px-1.5 py-0.5 rounded shadow-sm ${cagr >= 0 ? 'text-rose-600 bg-rose-50 border border-rose-100' : 'text-emerald-600 bg-emerald-50 border border-emerald-100'}`;
+                elCagr.className = `px-2 py-0.5 rounded-full text-sm font-bold ${cagr >= 0 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`;
             }
 
             const sorted = Array.from(hMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
@@ -1079,18 +1199,6 @@
                 charts.fx.data.datasets[0].data = [fxs['T'] || 0, (fxs['U'] || 0) + (fxs['G'] || 0) + (fxs['J'] || 0)];
                 charts.fx.data.datasets[0].backgroundColor = ['#3b82f6', '#14b8a6'];
                 charts.fx.update();
-            }
-
-            // 更新個股放大鏡的下拉選單
-            const elSelectInspect = document.getElementById('inspectStockSelect');
-            if (elSelectInspect) {
-                elSelectInspect.innerHTML = '<option value="">請選擇欲分析之標的...</option>';
-                Array.from(uniqueHoldings).sort().forEach(stock => {
-                    let opt = document.createElement('option');
-                    opt.value = stock;
-                    opt.textContent = stock;
-                    elSelectInspect.appendChild(opt);
-                });
             }
 
             portfolioSnapshot = { totalAsset: displayTotalAsset, stock: alloc['股'], bond: alloc['債'], cash: alloc['現金'], gold: alloc['黃金'], leverageAsset: levTotal, cagr: cagr, topHoldingsNames: sorted.map(i => i[0]) };
@@ -1419,43 +1527,58 @@
             const elSelect = document.getElementById('timeframeSelect');
             if (!elSelect) return;
             const type = elSelect.value;
-            let l = [...globalTrendData.labels], v = [...globalTrendData.values], fa = [...globalTrendData.fundA], fb = [...globalTrendData.fundB];
-            if (l.length === 0 || !charts.trend) return;
+            let l = [...globalTrendData.labels], v = [...globalTrendData.values], fa = [...globalTrendData.fundA], fb = [...globalTrendData.fundB], p = [...globalTrendData.pnl];
+            if (l.length === 0 || !charts.trend || !charts.pnl) return;
 
-            let displayLabels = [], displayValues = [], displayFundA = [], displayFundB = [];
+            let displayLabels = [], displayValues = [], displayFundA = [], displayFundB = [], displayPnl = [];
 
             if (type === 'quarterly') {
+                let qPnlSum = 0;
                 for (let i = 0; i < l.length; i++) {
                     const parts = l[i].split('/');
                     const year = parts[0]; const month = parts[1];
+                    qPnlSum += (p[i] || 0);
                     if (['03', '06', '09', '12'].includes(month)) {
                         let q = month === '03' ? 'Q1' : month === '06' ? 'Q2' : month === '09' ? 'Q3' : 'Q4';
                         displayLabels.push(`${year} ${q}`); displayValues.push(v[i]); displayFundA.push(fa[i]); displayFundB.push(fb[i]);
+                        displayPnl.push(qPnlSum / 10000);
+                        qPnlSum = 0;
                     }
                 }
                 const lastMonth = l[l.length - 1].split('/')[1];
                 if (!['03', '06', '09', '12'].includes(lastMonth)) {
                     displayLabels.push(`${l[l.length - 1].split('/')[0]} 至今`); displayValues.push(v[v.length - 1]); displayFundA.push(fa[fa.length - 1]); displayFundB.push(fb[fb.length - 1]);
+                    displayPnl.push(qPnlSum / 10000);
                 }
                 charts.trend.data.datasets[1].label = '大盤對照 (基準模擬季增 4.56%)';
             } else if (type === 'yearly') {
                 let yMap = {}; 
-                l.forEach((lbl, i) => { let y = lbl.split('/')[0]; yMap[y] = { lbl: y + '年', val: v[i], fA: fa[i], fB: fb[i] }; });
+                l.forEach((lbl, i) => { 
+                    let y = lbl.split('/')[0]; 
+                    if(!yMap[y]) yMap[y] = { lbl: y + '年', val: 0, fA: null, fB: null, pSum: 0 };
+                    yMap[y].val = v[i]; // 取年底最後一筆資產
+                    yMap[y].fA = fa[i]; yMap[y].fB = fb[i];
+                    yMap[y].pSum += (p[i] || 0); // 累加整年損益
+                });
                 displayLabels = Object.values(yMap).map(i => i.lbl); displayValues = Object.values(yMap).map(i => i.val); displayFundA = Object.values(yMap).map(i => i.fA); displayFundB = Object.values(yMap).map(i => i.fB);
+                displayPnl = Object.values(yMap).map(i => i.pSum / 10000);
                 charts.trend.data.datasets[1].label = '大盤對照 (基準模擬年增 19.56%)';
             } else if (type === 'ytd') {
                 const currentTwYear = String(new Date().getFullYear() - 1911);
                 for(let i = 0; i < l.length; i++) {
                     if(l[i].startsWith(currentTwYear + '/')) {
                         displayLabels.push(l[i]); displayValues.push(v[i]); displayFundA.push(fa[i]); displayFundB.push(fb[i]);
+                        displayPnl.push((p[i] || 0) / 10000);
                     }
                 }
                 charts.trend.data.datasets[1].label = '大盤對照 (基準模擬月增 1.5%)';
             } else {
                 displayLabels = [...l]; displayValues = [...v]; displayFundA = [...fa]; displayFundB = [...fb];
+                displayPnl = p.map(val => (val || 0) / 10000);
                 charts.trend.data.datasets[1].label = '大盤對照 (基準模擬月增 1.5%)';
             }
 
+            // 更新上方折線圖
             charts.trend.data.labels = displayLabels; charts.trend.data.datasets[0].data = displayValues; charts.trend.data.datasets[2].data = displayFundA; charts.trend.data.datasets[3].data = displayFundB;
             if (displayValues.length > 0) {
                 const baseVal = displayValues[0];
@@ -1464,9 +1587,13 @@
                 charts.trend.data.datasets[1].data = benchmark;
             }
             charts.trend.update();
+
+            // 更新下方直方圖
+            charts.pnl.data.labels = displayLabels;
+            charts.pnl.data.datasets[0].data = displayPnl;
+            charts.pnl.update();
         };
 
-        // ... PDF 與 API 相關程式碼 ...
         async function exportDashboardPdf() {
             const btn = document.getElementById('btnExportPdf');
             if (!btn) return;
@@ -1480,12 +1607,12 @@
                 ignores.forEach(el => { el.dataset.origDisplay = window.getComputedStyle(el).display; el.style.display = 'none'; });
 
                 const pdfHeader = document.createElement('div'); pdfHeader.id = 'temp-pdf-header';
-                pdfHeader.innerHTML = `<div style="text-align: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0; page-break-inside: avoid; break-inside: avoid;"><h1 style="font-size: 26px; font-weight: bold; color: #1e293b; margin: 0;">個人財務績效報告</h1><p style="font-size: 13px; color: #64748b; margin-top: 6px;">CFA 理財小幫手 | 匯出時間：${new Date().toLocaleString('zh-TW')} | 報告版本：V2.3.0</p></div>`;
+                pdfHeader.innerHTML = `<div style="text-align: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0; page-break-inside: avoid; break-inside: avoid;"><h1 style="font-size: 26px; font-weight: bold; color: #1e293b; margin: 0;">個人財務績效報告</h1><p style="font-size: 13px; color: #64748b; margin-top: 6px;">CFA 理財小幫手 | 匯出時間：${new Date().toLocaleString('zh-TW')} | 報告版本：V2.6.2</p></div>`;
                 content.insertBefore(pdfHeader, content.firstChild);
 
                 await new Promise(resolve => setTimeout(resolve, 300));
                 const updateDateText = (document.getElementById('valUpdateDate')?.innerText || '最新').replace(/[\/:*?"<>|]/g, '');
-                const filename = `財務績效報告_V2.3.0_${updateDateText}.pdf`;
+                const filename = `財務績效報告_V2.6.2_${updateDateText}.pdf`;
 
                 const opt = { margin: [10, 10, 15, 10], filename: filename, image: { type: 'jpeg', quality: 1.0 }, html2canvas: { scale: 2, useCORS: true, scrollY: 0, backgroundColor: '#f8fafc' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['.glass-card', '#temp-pdf-header'] } };
                 await html2pdf().set(opt).from(content).toPdf().get('pdf').then(function (pdf) {
