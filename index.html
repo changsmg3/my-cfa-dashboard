@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>CFA 財務儀表板</title>
+    <title>CFA 個人財務績效數位儀表板 V2.9.7</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#f8fafc">
@@ -131,7 +131,7 @@
             <div>
                 <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-200 flex items-center gap-2">
                     <i data-lucide="layout-dashboard" class="text-indigo-600 dark:text-indigo-400"></i>
-                    個人財務儀表板 <span class="text-sm bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full ml-2 hidden md:inline-block border border-transparent dark:border-indigo-800">V2.9.7 旗艦版</span>
+                    個人財務績效數位儀表板 <span class="text-sm bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full ml-2 hidden md:inline-block border border-transparent dark:border-indigo-800">V2.9.7 旗艦版</span>
                 </h1>
                 <p class="text-slate-500 dark:text-slate-400 mt-1">更新日期：<span id="valUpdateDate">請上傳 Excel 檔案</span> | 追蹤檔數：<span id="valHoldingsCount">--</span> 檔</p>
             </div>
@@ -360,7 +360,7 @@
                         <h3 class="font-bold text-slate-800 dark:text-slate-200">標的放大鏡</h3>
                     </div>
                     
-                    <!-- V2.9.5 內建搜尋型下拉選單 -->
+                    <!-- 內建搜尋型下拉選單 -->
                     <div class="mb-4 relative w-full" id="customSelectContainer">
                         <div id="customSelectTrigger" class="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-700 dark:text-slate-300 cursor-pointer bg-white dark:bg-slate-800 flex justify-between items-center shadow-sm hover:border-emerald-400 transition-colors">
                             <span id="customSelectLabel" class="truncate">請先上傳檔案...</span>
@@ -420,7 +420,7 @@
                 </div>
             </section>
             
-            <!-- 模塊 2：全新 V2.9.7 CLEC 4:3:3 再平衡雷達 -->
+            <!-- 模塊 2：CLEC 4:3:3 再平衡雷達 -->
             <section class="glass-card overflow-hidden flex flex-col justify-between" id="clecRadarContainer">
                 <div>
                     <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-200 dark:border-slate-800">
@@ -435,7 +435,7 @@
                         <span>排除無關(3)：<b id="valClecExcluded" class="text-slate-500">0 萬</b></span>
                     </div>
 
-                    <!-- 3 個資產項目的進度條與偏離監控 (解開巢狀結構，避免 innerText 相互覆蓋銷毀) -->
+                    <!-- 3 個資產項目的進度條與偏離監控 -->
                     <div class="space-y-3" id="clecBarsContainer">
                         <!-- 市值型 (標籤 1 / 目標 40%) -->
                         <div>
@@ -506,20 +506,20 @@
             </section>
 
             <!-- 模塊 3：後勤與外匯區 (Logistics & FX) -->
-            <section class="glass-card overflow-hidden flex flex-col justify-between">
+            <section class="glass-card flex flex-col justify-between">
                 <div>
                     <h2 class="text-xl font-semibold mb-4 flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 text-slate-800 dark:text-slate-200">
                         <i data-lucide="wallet" class="text-blue-500 dark:text-blue-400 w-5 h-5"></i> 後勤與外匯區 (Logistics & FX)
                     </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 h-64">
-                        <div class="flex flex-col justify-center items-center h-full w-full relative">
-                            <span class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">幣別分佈 (Currency)</span>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 h-auto md:h-64">
+                        <div class="flex flex-col justify-center items-center h-auto md:h-full w-full relative">
+                            <span class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">幣別分佈 (Currency)</span>
                             <div class="h-56 w-full relative">
                                 <canvas id="fxChart"></canvas>
                             </div>
                         </div>
-                        <div class="flex flex-col justify-center items-center h-full w-full relative">
-                            <span class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">帳戶分佈 (Accounts)</span>
+                        <div class="flex flex-col justify-center items-center h-auto md:h-full w-full relative">
+                            <span class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">帳戶分佈 (Accounts)</span>
                             <div class="h-56 w-full relative">
                                 <canvas id="accountChart"></canvas>
                             </div>
@@ -539,8 +539,8 @@
             <div id="aiResult" class="ai-markdown hidden"></div>
         </div>
     </div>
-    
-    <!-- V2.9.6 預測計算機與散布圖 Modal -->
+
+    <!-- 預測計算機與散布圖 Modal -->
     <div id="predictModal" class="modal-overlay" data-html2canvas-ignore="true">
         <div class="modal-content relative w-[95vw] md:w-[90%] !max-w-2xl !p-6 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 shadow-2xl">
             <button id="btnClosePredict" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
@@ -787,7 +787,7 @@
             }
         }
 
-        // V2.9.5 Custom Searchable Select Logic
+        // Custom Searchable Select Logic
         let currentStockOptions = [];
         
         function initCustomSelect() {
@@ -872,7 +872,7 @@
             filterCustomSelect('');
         }
 
-        // V2.9.7 CLEC 4:3:3 Dynamic Rebalancing Radar Renderer (防禦性強化版本)
+        // CLEC 4:3:3 Dynamic Rebalancing Radar Renderer
         function renderCLECRadar(pool) {
             try {
                 const total = pool.cash + pool.marketCap + pool.lev2;
@@ -907,7 +907,6 @@
                 const deltaLev = pool.lev2 - (total * 0.30);
                 const deltaCash = pool.cash - (total * 0.30);
 
-                // 安全節點賦值工具，避免 null reference
                 const safeSetText = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
                 const safeSetWidth = (id, val) => { const el = document.getElementById(id); if (el) el.style.width = val; };
 
@@ -1017,8 +1016,7 @@
                     let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
                     if(sum === 0 || value === 0) return false;
                     let pct = (value * 100 / sum);
-                    // 關鍵修正：若佔比小於 0.05% (四捨五入等於 0.0%)，直接隱藏，杜絕 0.0% 雜訊與疊字遮蔽
-                    if(pct < 0.05) return false;
+                    if(pct < 0.05) return false; // 排除小於 0.05% 的微小殘值
                     if(ctx.datasetIndex === 1 && pct < 5) return false; 
                     return true;
                 },
@@ -1215,6 +1213,7 @@
             });
 
             charts.strategy = new Chart(document.getElementById('strategyChart').getContext('2d'), { type: 'bar', data: { labels: [], datasets: [{ data: [] }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            
             charts.fx = new Chart(document.getElementById('fxChart').getContext('2d'), { 
                 type: 'pie', 
                 data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] }, 
@@ -1227,7 +1226,20 @@
                     } 
                 } 
             });
-            charts.account = new Chart(document.getElementById('accountChart').getContext('2d'), { type: 'pie', data: { labels: [], datasets: [{ data: [] }] }, options: { maintainAspectRatio: false, plugins: { datalabels: datalabelsInt, tooltip: { callbacks: { label: function(c) { return c.label + ': NT$ ' + new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 0 }).format(c.raw); } } }, legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } } });
+
+            charts.account = new Chart(document.getElementById('accountChart').getContext('2d'), { 
+                type: 'pie', 
+                data: { labels: [], datasets: [{ data: [] }] }, 
+                options: { 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        datalabels: datalabelsInt, 
+                        tooltip: { callbacks: { label: function(c) { return c.label + ': NT$ ' + new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 0 }).format(c.raw); } } }, 
+                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } 
+                    } 
+                } 
+            });
+
             charts.topHoldings = new Chart(document.getElementById('topHoldingsChart').getContext('2d'), { type: 'pie', data: { labels: [], datasets: [{ data: [], backgroundColor: topHoldingsColors, borderWidth: 0 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } } } });
             
             charts.gaugeFire = new Chart(document.getElementById('gaugeFire').getContext('2d'), { type: 'doughnut', data: { datasets: [{ data: [0, 100], backgroundColor: ['#4f46e5', '#f1f5f9'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '80%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, animation: { duration: 0 } } });
@@ -1235,7 +1247,7 @@
             charts.gaugeDebt = new Chart(document.getElementById('gaugeDebtRatio').getContext('2d'), { type: 'doughnut', data: { datasets: [{ data: [0, 100], backgroundColor: ['#e2e8f0', '#e2e8f0'], borderWidth: 0 }] }, options: gaugeConfig });
             charts.gaugeLeverage = new Chart(document.getElementById('gaugeLeverageRatio').getContext('2d'), { type: 'doughnut', data: { datasets: [{ data: [0, 100], backgroundColor: ['#e2e8f0', '#e2e8f0'], borderWidth: 0 }] }, options: gaugeConfig });
         
-            // V2.9.6 Scatter Chart Initialization
+            // Scatter Chart Initialization
             charts.scatter = new Chart(document.getElementById('scatterChart').getContext('2d'), {
                 type: 'scatter',
                 data: {
@@ -1637,7 +1649,7 @@
             let uniqueHoldings = new Set();
             let totalBetaValue = 0; 
             
-            // V2.9.7 CLEC 4:3:3 策略池累積器 (1:市值 40%, 2:正二 30%, 0:類現金 30%, 3:排除)
+            // CLEC 4:3:3 策略池累積器 (1:市值 40%, 2:正二 30%, 0:類現金 30%, 3:排除)
             let clecPool = { cash: 0, marketCap: 0, lev2: 0, excluded: 0 };
 
             window.globalHoldingsList = [];
@@ -1740,7 +1752,7 @@
                         window.globalHoldingsList.push({ name: name, shares: parseNum(r[col.shares]), cost: cost, marketVal: marketVal });
                     }
 
-                    // V2.9.7 累加 CLEC 策略池 (0:類現金, 1:市值型, 2:正二型, 3:與此策略無關)
+                    // 累加 CLEC 策略池 (0:類現金, 1:市值型, 2:正二型, 3:與此策略無關)
                     let rawClecCode = r[col.clec];
                     let clecCode = null;
                     if (rawClecCode !== undefined && rawClecCode !== null && String(rawClecCode).trim() !== '') {
@@ -1790,7 +1802,6 @@
 
                     accs[r[col.acc] || '未分類'] = (accs[r[col.acc] || '未分類'] || 0) + marketVal;
                     
-                    // 依據「幣別」欄位統計幣別分佈
                     let cur = formatCurrency(r[col.fx], name);
                     if (effectiveMarketVal > 0) {
                         fxs[cur] = (fxs[cur] || 0) + effectiveMarketVal;
@@ -1835,7 +1846,7 @@
             portfolioSnapshot.annVol = annVol;
             portfolioSnapshot.sharpe = annVol > 0 ? (cagr - 0.02) / annVol : 0;
 
-            // V2.9.6 OLS Scatter Plot Calculation (Max 36 months)
+            // OLS Scatter Plot Calculation (Max 36 months)
             if (idxReturns.length > 0 && idxReturns.length === portReturns.length) {
                 let lookback = 36;
                 let startIndex = Math.max(0, portReturns.length - lookback);
@@ -1978,7 +1989,7 @@
 
             if (charts.account) { charts.account.data.labels = Object.keys(accs); charts.account.data.datasets[0].data = Object.values(accs); charts.account.data.datasets[0].backgroundColor = ['#e11d48', '#0ea5e9', '#f59e0b', '#8b5cf6', '#14b8a6', '#f43f5e']; charts.account.update(); }
             
-            // 動態渲染幣別分佈圓餅圖 (精確反映「幣別」欄位之分佈)
+            // 動態渲染幣別分佈圓餅圖
             if (charts.fx) {
                 let fxKeys = Object.keys(fxs);
                 let fxVals = Object.values(fxs);
@@ -2019,7 +2030,7 @@
             }
             renderLedgerTable();
 
-            // V2.9.7 執行 CLEC 4:3:3 雷達即時渲染 (加入保護層，杜絕連帶阻斷後續圖表渲染)
+            // 執行 CLEC 4:3:3 雷達即時渲染 (含安全隔離防護)
             try {
                 renderCLECRadar(clecPool);
             } catch (radarErr) {
