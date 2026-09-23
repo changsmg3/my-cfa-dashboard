@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>CFA 個人財務績效數位儀表板 V2.9.7</title>
+    <title>CFA 個人財務績效數位儀表板 V2.9.8</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#f8fafc">
@@ -33,7 +33,6 @@
     <style>
         body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         
-        /* Light Theme Typography Enforcements */
         .text-slate-800, .text-slate-900, .text-slate-700 { color: #1e293b; }
         .text-slate-600 { color: #64748B; }
 
@@ -49,7 +48,6 @@
         }
         .glass-card:hover { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.08); transform: translateY(-2px); }
 
-        /* Dark Mode Overrides */
         .dark body { background-color: #020617; color: #94A3B8; }
         .dark .glass-card { background: #0f172a; box-shadow: none; border-color: #1e293b; }
         .dark .glass-card:hover { border-color: #334155; }
@@ -62,7 +60,6 @@
         .dark .text-slate-600 { color: #94A3B8 !important; }
         .dark .text-indigo-600 { color: #818CF8 !important; }
         .dark .bg-indigo-600 { background-color: #4F46E5 !important; }
-        .dark .primary-btn { border: 1px solid #4F46E5; }
         .dark select, .dark input { background-color: #020617 !important; color: #94A3B8 !important; border-color: #1e293b !important; }
         .dark select:focus, .dark input:focus { border-color: #818CF8 !important; outline: none; box-shadow: 0 0 0 1px #818CF8 !important; }
         .dark .sortable-th:hover, .dark tr.hover\:bg-slate-50:hover, .dark tr.hover\:bg-indigo-50\/50:hover { background-color: #1e293b !important; }
@@ -109,7 +106,6 @@
         .glass-card:hover .pulse-text { transform: scale(1.02); }
         .glass-card:hover .badge-focus { transform: scale(1.1); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
         
-        /* Slider Styling */
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none; appearance: none;
             width: 16px; height: 16px; border-radius: 50%; 
@@ -118,20 +114,42 @@
         input[type=range]::-webkit-slider-thumb:hover { background: #4338ca; transform: scale(1.1); }
         .dark input[type=range]::-webkit-slider-thumb { background: #818CF8; }
 
-        /* Custom Scrollbar for Dropdown */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
         .dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #475569; }
+
+        /* Floating Toast Message Box */
+        #appToast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            opacity: 0;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+            z-index: 100;
+            pointer-events: none;
+        }
+        #appToast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
     </style>
 </head>
 <body class="transition-all duration-300 relative text-[#2C4A73] dark:text-slate-400">
+    <!-- Floating Toast Notification -->
+    <div id="appToast" class="px-5 py-2.5 rounded-full text-sm font-medium shadow-xl flex items-center gap-2 border bg-slate-900 text-white border-slate-700 dark:bg-white dark:text-slate-900">
+        <i id="toastIcon" data-lucide="info" class="w-4 h-4"></i>
+        <span id="toastMsg">通知訊息</span>
+    </div>
+
     <div id="dashboard-content" class="w-full max-w-[1600px] mx-auto px-4 py-8 bg-slate-50 dark:bg-[#020617] transition-all duration-300">
         <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
                 <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-200 flex items-center gap-2">
                     <i data-lucide="layout-dashboard" class="text-indigo-600 dark:text-indigo-400"></i>
-                    個人財務績效數位儀表板 <span class="text-sm bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full ml-2 hidden md:inline-block border border-transparent dark:border-indigo-800">V2.9.7 旗艦版</span>
+                    個人財務績效數位儀表板 <span class="text-sm bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full ml-2 hidden md:inline-block border border-transparent dark:border-indigo-800">V2.9.8 旗艦版</span>
                 </h1>
                 <p class="text-slate-500 dark:text-slate-400 mt-1">更新日期：<span id="valUpdateDate">請上傳 Excel 檔案</span> | 追蹤檔數：<span id="valHoldingsCount">--</span> 檔</p>
             </div>
@@ -360,7 +378,6 @@
                         <h3 class="font-bold text-slate-800 dark:text-slate-200">標的放大鏡</h3>
                     </div>
                     
-                    <!-- 內建搜尋型下拉選單 -->
                     <div class="mb-4 relative w-full" id="customSelectContainer">
                         <div id="customSelectTrigger" class="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-700 dark:text-slate-300 cursor-pointer bg-white dark:bg-slate-800 flex justify-between items-center shadow-sm hover:border-emerald-400 transition-colors">
                             <span id="customSelectLabel" class="truncate">請先上傳檔案...</span>
@@ -406,7 +423,6 @@
 
         <div class="html2pdf__page-break"></div>
 
-        <!-- V2.9.7 三分割底部戰情區：策略模塊 (33%) | CLEC 4:3:3 雷達 (33%) | 後勤與外匯區 (33%) -->
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
             <!-- 模塊 1：績效與策略模塊 -->
             <section class="glass-card overflow-hidden transition-all duration-500 flex flex-col justify-between" id="strategyCardContainer">
@@ -420,12 +436,12 @@
                 </div>
             </section>
             
-            <!-- 模塊 2：CLEC 4:3:3 再平衡雷達 -->
+            <!-- 模塊 2：CLEC 4:3:3 幾何再平衡雷達 (方案三：雙模態左圖右文) -->
             <section class="glass-card overflow-hidden flex flex-col justify-between" id="clecRadarContainer">
                 <div>
                     <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-200 dark:border-slate-800">
                         <h2 class="text-xl font-semibold flex items-center gap-2 text-slate-800 dark:text-slate-200">
-                            <i data-lucide="scale" class="text-indigo-500 dark:text-indigo-400 w-5 h-5"></i> CLEC 再平衡雷達
+                            <i data-lucide="radar" class="text-indigo-500 dark:text-indigo-400 w-5 h-5"></i> CLEC 再平衡雷達
                         </h2>
                         <span id="badgeClecStatus" class="text-xs px-2.5 py-0.5 rounded-full font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">未偵測</span>
                     </div>
@@ -435,62 +451,61 @@
                         <span>排除無關(3)：<b id="valClecExcluded" class="text-slate-500">0 萬</b></span>
                     </div>
 
-                    <!-- 3 個資產項目的進度條與偏離監控 -->
-                    <div class="space-y-3" id="clecBarsContainer">
-                        <!-- 市值型 (標籤 1 / 目標 40%) -->
-                        <div>
-                            <div class="flex justify-between text-xs mb-1">
-                                <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                                    <span class="w-2 h-2 rounded-full bg-blue-500"></span> 市值型 (標籤 1 / 目標 40%)
-                                </span>
-                                <span class="font-bold text-slate-600 dark:text-slate-300">
-                                    <span id="lblClecMcapRatio">--%</span> (<span id="lblClecMcapAmt">-- 萬</span>)
-                                </span>
-                            </div>
-                            <div class="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden relative">
-                                <div id="barClecMcap" class="h-2.5 bg-blue-500 rounded-full transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                            <div class="flex justify-between text-[10px] text-slate-400 mt-0.5">
-                                <span>偏差：<span id="devClecMcap" class="font-bold">--%</span></span>
-                                <span id="actClecMcap" class="font-medium">--</span>
-                            </div>
+                    <!-- 雙模態佈局：桌機左圖右文，手機自動堆疊 -->
+                    <div class="flex flex-col sm:flex-row items-center gap-3">
+                        <!-- 左側：幾何雷達圖 (Spider Radar) -->
+                        <div class="w-full sm:w-5/12 h-52 relative flex items-center justify-center">
+                            <canvas id="clecRadarChart"></canvas>
                         </div>
 
-                        <!-- 正二型 (標籤 2 / 目標 30%) -->
-                        <div>
-                            <div class="flex justify-between text-xs mb-1">
-                                <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                                    <span class="w-2 h-2 rounded-full bg-rose-500"></span> 正二型 (標籤 2 / 目標 30%)
-                                </span>
-                                <span class="font-bold text-slate-600 dark:text-slate-300">
-                                    <span id="lblClecLevRatio">--%</span> (<span id="lblClecLevAmt">-- 萬</span>)
-                                </span>
+                        <!-- 右側：緊湊型量化狀態清單 -->
+                        <div class="w-full sm:w-7/12 space-y-2 text-xs">
+                            <!-- 市值型 (標籤 1 / 目標 40%) -->
+                            <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/60">
+                                <div class="flex justify-between items-center mb-0.5">
+                                    <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-blue-500"></span> 市值型 (40%)
+                                    </span>
+                                    <span class="font-bold text-slate-700 dark:text-slate-200">
+                                        <span id="lblClecMcapRatio">--%</span> <span class="font-normal text-slate-400">(<span id="lblClecMcapAmt">-- 萬</span>)</span>
+                                    </span>
+                                </div>
+                                <div class="flex justify-between text-[10px] text-slate-400">
+                                    <span>偏差：<span id="devClecMcap" class="font-bold">--%</span></span>
+                                    <span id="actClecMcap" class="font-medium">--</span>
+                                </div>
                             </div>
-                            <div class="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden relative">
-                                <div id="barClecLev" class="h-2.5 bg-rose-500 rounded-full transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                            <div class="flex justify-between text-[10px] text-slate-400 mt-0.5">
-                                <span>偏差：<span id="devClecLev" class="font-bold">--%</span></span>
-                                <span id="actClecLev" class="font-medium">--</span>
-                            </div>
-                        </div>
 
-                        <!-- 類現金 (標籤 0 / 目標 30%) -->
-                        <div>
-                            <div class="flex justify-between text-xs mb-1">
-                                <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 類現金 (標籤 0 / 目標 30%)
-                                </span>
-                                <span class="font-bold text-slate-600 dark:text-slate-300">
-                                    <span id="lblClecCashRatio">--%</span> (<span id="lblClecCashAmt">-- 萬</span>)
-                                </span>
+                            <!-- 正二型 (標籤 2 / 目標 30%) -->
+                            <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/60">
+                                <div class="flex justify-between items-center mb-0.5">
+                                    <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-rose-500"></span> 正二型 (30%)
+                                    </span>
+                                    <span class="font-bold text-slate-700 dark:text-slate-200">
+                                        <span id="lblClecLevRatio">--%</span> <span class="font-normal text-slate-400">(<span id="lblClecLevAmt">-- 萬</span>)</span>
+                                    </span>
+                                </div>
+                                <div class="flex justify-between text-[10px] text-slate-400">
+                                    <span>偏差：<span id="devClecLev" class="font-bold">--%</span></span>
+                                    <span id="actClecLev" class="font-medium">--</span>
+                                </div>
                             </div>
-                            <div class="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden relative">
-                                <div id="barClecCash" class="h-2.5 bg-emerald-500 rounded-full transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                            <div class="flex justify-between text-[10px] text-slate-400 mt-0.5">
-                                <span>偏差：<span id="devClecCash" class="font-bold">--%</span></span>
-                                <span id="actClecCash" class="font-medium">--</span>
+
+                            <!-- 類現金 (標籤 0 / 目標 30%) -->
+                            <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/60">
+                                <div class="flex justify-between items-center mb-0.5">
+                                    <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 類現金 (30%)
+                                    </span>
+                                    <span class="font-bold text-slate-700 dark:text-slate-200">
+                                        <span id="lblClecCashRatio">--%</span> <span class="font-normal text-slate-400">(<span id="lblClecCashAmt">-- 萬</span>)</span>
+                                    </span>
+                                </div>
+                                <div class="flex justify-between text-[10px] text-slate-400">
+                                    <span>偏差：<span id="devClecCash" class="font-bold">--%</span></span>
+                                    <span id="actClecCash" class="font-medium">--</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -554,7 +569,6 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- 左側：輸入與預測區 -->
                 <div>
                     <div class="mb-4 space-y-3">
                         <div>
@@ -592,11 +606,8 @@
                             <span class="text-sm text-slate-500 dark:text-slate-400 font-medium">預期總資產</span>
                             <span class="text-xs px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold" id="lblIndexChange">大盤變動: --%</span>
                         </div>
-                        
                         <h4 id="valLinearAsset" class="hidden text-xl font-bold text-slate-400 dark:text-slate-500 mb-2 line-through decoration-slate-400/50">NT$ 0</h4>
-                        
                         <p id="lblDragWarning" class="text-xs font-bold text-rose-600 dark:text-rose-400 mb-3 bg-rose-50 dark:bg-rose-900/20 py-2 px-3 rounded-lg border border-rose-100 dark:border-rose-900/30 hidden">⚠️ 預估期內槓桿波動耗損：- NT$ 0</p>
-                        
                         <div class="border-t border-slate-200 dark:border-slate-700 pt-3 mt-1">
                             <p class="text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">最終真實預估淨值</p>
                             <h3 id="valPredAsset" class="text-3xl font-black text-slate-800 dark:text-slate-200 tracking-tight mb-1">NT$ 0</h3>
@@ -605,7 +616,6 @@
                     </div>
                 </div>
                 
-                <!-- 右側：散布圖與迴歸分析 -->
                 <div class="flex flex-col">
                     <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
                         <i data-lucide="scatter-chart" class="w-4 h-4 text-indigo-500"></i>
@@ -646,6 +656,39 @@
             <div class="flex justify-end gap-3">
                 <button id="btnClearApiKey" class="px-4 py-2 text-sm text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors">清除金鑰</button>
                 <button id="btnSaveApiKey" class="px-4 py-2 text-sm text-white bg-indigo-600 dark:bg-indigo-500 rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors">安全儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Prompt Modal for FIRE Target -->
+    <div id="fireTargetModal" class="modal-overlay" data-html2canvas-ignore="true">
+        <div class="modal-content relative !max-w-sm !p-6">
+            <button id="btnCloseFireModal" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <div class="flex items-center gap-3 mb-3">
+                <div class="p-2 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-lg"><i data-lucide="flame" class="w-5 h-5"></i></div>
+                <h3 class="text-lg font-bold text-slate-800 dark:text-slate-200">修改 FIRE 退休目標</h3>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">請輸入您的預期退休目標總額（單位：萬元）：</p>
+            <input type="number" id="inputFireTargetVal" class="w-full text-xl font-bold border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" placeholder="3000">
+            <div class="flex justify-end gap-2">
+                <button id="btnCancelFireModal" class="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">取消</button>
+                <button id="btnConfirmFireModal" class="px-4 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors">儲存變更</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirm Modal for Clearing Cache -->
+    <div id="confirmClearCacheModal" class="modal-overlay" data-html2canvas-ignore="true">
+        <div class="modal-content relative !max-w-sm !p-6">
+            <button id="btnCloseConfirmClear" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <div class="flex items-center gap-3 mb-3">
+                <div class="p-2 bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 rounded-lg"><i data-lucide="alert-triangle" class="w-5 h-5"></i></div>
+                <h3 class="text-lg font-bold text-slate-800 dark:text-slate-200">確認清除暫存？</h3>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">清除後本機記憶的 Excel 資料將被移除，頁面將重新載入。您隨時可重新上傳檔案讀取。</p>
+            <div class="flex justify-end gap-2">
+                <button id="btnCancelClearCache" class="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">取消</button>
+                <button id="btnConfirmClearCache" class="px-4 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors">確認清除</button>
             </div>
         </div>
     </div>
@@ -736,7 +779,26 @@
         const fmtNum = (num) => new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 0 }).format(num || 0);
         const fmtPct = (num) => (num * 100).toFixed(2) + '%'; 
         const parseNum = (val) => parseFloat(String(val).replace(/,/g, '')) || 0;
-        
+
+        // Custom Toast Helper (Replaces native alert)
+        let toastTimeout = null;
+        function showToast(msg, icon = 'info') {
+            const toast = document.getElementById('appToast');
+            const msgEl = document.getElementById('toastMsg');
+            const iconEl = document.getElementById('toastIcon');
+            if (!toast || !msgEl) return;
+
+            msgEl.innerText = msg;
+            if (iconEl) iconEl.setAttribute('data-lucide', icon);
+            lucide.createIcons();
+
+            toast.classList.add('show');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
         const parsePct = (val) => {
             if (val === undefined || val === null || val === '') return undefined;
             if (typeof val === 'number') return val; 
@@ -787,7 +849,6 @@
             }
         }
 
-        // Custom Searchable Select Logic
         let currentStockOptions = [];
         
         function initCustomSelect() {
@@ -872,7 +933,6 @@
             filterCustomSelect('');
         }
 
-        // CLEC 4:3:3 Dynamic Rebalancing Radar Renderer
         function renderCLECRadar(pool) {
             try {
                 const total = pool.cash + pool.marketCap + pool.lev2;
@@ -892,6 +952,10 @@
                     badge.className = 'text-xs px-2.5 py-0.5 rounded-full font-bold bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400';
                     if (adviceTxt) adviceTxt.innerText = '持股明細未偵測到標籤為 0、1、2 的 CLEC 策略部位。請確認 Excel「CLEC 策略」欄位。';
                     if (adviceBox) adviceBox.className = 'mt-3 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60 text-[11px] leading-relaxed text-slate-600 dark:text-slate-400';
+                    if (charts.clecRadar) {
+                        charts.clecRadar.data.datasets[1].data = [0, 0, 0];
+                        charts.clecRadar.update();
+                    }
                     return;
                 }
 
@@ -908,12 +972,10 @@
                 const deltaCash = pool.cash - (total * 0.30);
 
                 const safeSetText = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-                const safeSetWidth = (id, val) => { const el = document.getElementById(id); if (el) el.style.width = val; };
 
                 // 1. 市值型 (標籤 1 / 目標 40%)
                 safeSetText('lblClecMcapRatio', (rMcap * 100).toFixed(1) + '%');
                 safeSetText('lblClecMcapAmt', (pool.marketCap / 10000).toFixed(1) + ' 萬');
-                safeSetWidth('barClecMcap', Math.min(100, Math.max(0, (rMcap / 0.60) * 100)) + '%');
                 const elDevMcap = document.getElementById('devClecMcap');
                 if (elDevMcap) {
                     elDevMcap.innerText = (devMcap >= 0 ? '+' : '') + (devMcap * 100).toFixed(1) + '%';
@@ -933,7 +995,6 @@
                 // 2. 正二型 (標籤 2 / 目標 30%)
                 safeSetText('lblClecLevRatio', (rLev * 100).toFixed(1) + '%');
                 safeSetText('lblClecLevAmt', (pool.lev2 / 10000).toFixed(1) + ' 萬');
-                safeSetWidth('barClecLev', Math.min(100, Math.max(0, (rLev / 0.50) * 100)) + '%');
                 const elDevLev = document.getElementById('devClecLev');
                 if (elDevLev) {
                     elDevLev.innerText = (devLev >= 0 ? '+' : '') + (devLev * 100).toFixed(1) + '%';
@@ -953,7 +1014,6 @@
                 // 3. 類現金 (標籤 0 / 目標 30%)
                 safeSetText('lblClecCashRatio', (rCash * 100).toFixed(1) + '%');
                 safeSetText('lblClecCashAmt', (pool.cash / 10000).toFixed(1) + ' 萬');
-                safeSetWidth('barClecCash', Math.min(100, Math.max(0, (rCash / 0.50) * 100)) + '%');
                 const elDevCash = document.getElementById('devClecCash');
                 if (elDevCash) {
                     elDevCash.innerText = (devCash >= 0 ? '+' : '') + (devCash * 100).toFixed(1) + '%';
@@ -972,6 +1032,29 @@
 
                 // 觸發條件：單一資產偏差 >= ±5%
                 const isRebalanceTriggered = Math.abs(devMcap) >= 0.05 || Math.abs(devLev) >= 0.05 || Math.abs(devCash) >= 0.05;
+
+                // 更新幾何雷達圖 (V2.9.8)
+                if (charts.clecRadar) {
+                    charts.clecRadar.data.datasets[1].data = [
+                        parseFloat((rMcap * 100).toFixed(1)),
+                        parseFloat((rLev * 100).toFixed(1)),
+                        parseFloat((rCash * 100).toFixed(1))
+                    ];
+                    
+                    if (isRebalanceTriggered) {
+                        charts.clecRadar.data.datasets[1].borderColor = '#f43f5e';
+                        charts.clecRadar.data.datasets[1].backgroundColor = 'rgba(244, 63, 94, 0.25)';
+                        charts.clecRadar.data.datasets[1].pointBackgroundColor = '#f43f5e';
+                    } else {
+                        charts.clecRadar.data.datasets[1].borderColor = '#4f46e5';
+                        charts.clecRadar.data.datasets[1].backgroundColor = 'rgba(79, 70, 229, 0.25)';
+                        charts.clecRadar.data.datasets[1].pointBackgroundColor = '#4f46e5';
+                    }
+
+                    const maxPct = Math.max(rMcap * 100, rLev * 100, rCash * 100);
+                    charts.clecRadar.options.scales.r.suggestedMax = Math.max(50, Math.ceil(maxPct / 10) * 10);
+                    charts.clecRadar.update();
+                }
 
                 if (isRebalanceTriggered) {
                     badge.innerText = '🚨 觸發再平衡';
@@ -1016,7 +1099,7 @@
                     let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
                     if(sum === 0 || value === 0) return false;
                     let pct = (value * 100 / sum);
-                    if(pct < 0.05) return false; // 排除小於 0.05% 的微小殘值
+                    if(pct < 0.05) return false; 
                     if(ctx.datasetIndex === 1 && pct < 5) return false; 
                     return true;
                 },
@@ -1151,22 +1234,6 @@
                                 }
                             }
                         } 
-                    },
-                    onHover: (event, elements, chart) => {
-                        const strategyCard = document.getElementById('strategyCardContainer');
-                        if (elements.length > 0 && strategyCard) {
-                            const datasetIndex = elements[0].datasetIndex;
-                            const index = elements[0].index;
-                            let isStock = (datasetIndex === 0 && index <= 2) || (datasetIndex === 1 && index === 0);
-                            let ringClass = document.documentElement.classList.contains('dark') ? 'ring-indigo-400' : 'ring-indigo-400';
-                            if (isStock) {
-                                strategyCard.classList.add('ring-4', ringClass, 'ring-opacity-50', '-translate-y-1', 'shadow-2xl');
-                            } else {
-                                strategyCard.classList.remove('ring-4', 'ring-indigo-400', 'ring-opacity-50', '-translate-y-1', 'shadow-2xl');
-                            }
-                        } else if (strategyCard) {
-                            strategyCard.classList.remove('ring-4', 'ring-indigo-400', 'ring-opacity-50', '-translate-y-1', 'shadow-2xl');
-                        }
                     }
                 } 
             });
@@ -1214,6 +1281,62 @@
 
             charts.strategy = new Chart(document.getElementById('strategyChart').getContext('2d'), { type: 'bar', data: { labels: [], datasets: [{ data: [] }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } } } });
             
+            const isDarkInit = document.documentElement.classList.contains('dark');
+            charts.clecRadar = new Chart(document.getElementById('clecRadarChart').getContext('2d'), {
+                type: 'radar',
+                data: {
+                    labels: ['市值型\n(40%)', '正二型\n(30%)', '類現金\n(30%)'],
+                    datasets: [
+                        {
+                            label: '目標基準 (4:3:3)',
+                            data: [40, 30, 30],
+                            borderColor: '#94a3b8',
+                            borderWidth: 1.5,
+                            borderDash: [4, 4],
+                            backgroundColor: 'rgba(148, 163, 184, 0.08)',
+                            pointRadius: 2,
+                            pointBackgroundColor: '#94a3b8'
+                        },
+                        {
+                            label: '當前配置',
+                            data: [0, 0, 0],
+                            borderColor: '#4f46e5',
+                            borderWidth: 2,
+                            backgroundColor: 'rgba(79, 70, 229, 0.25)',
+                            pointRadius: 4,
+                            pointBackgroundColor: '#4f46e5'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    return ctx.dataset.label + ': ' + ctx.raw.toFixed(1) + '%';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        r: {
+                            angleLines: { color: isDarkInit ? '#334155' : '#e2e8f0' },
+                            grid: { color: isDarkInit ? '#1e293b' : '#f1f5f9' },
+                            pointLabels: {
+                                font: { size: 10, weight: 'bold' },
+                                color: isDarkInit ? '#94A3B8' : '#64748b'
+                            },
+                            ticks: { display: false },
+                            min: 0,
+                            suggestedMax: 50
+                        }
+                    }
+                }
+            });
+
             charts.fx = new Chart(document.getElementById('fxChart').getContext('2d'), { 
                 type: 'pie', 
                 data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] }, 
@@ -1247,7 +1370,6 @@
             charts.gaugeDebt = new Chart(document.getElementById('gaugeDebtRatio').getContext('2d'), { type: 'doughnut', data: { datasets: [{ data: [0, 100], backgroundColor: ['#e2e8f0', '#e2e8f0'], borderWidth: 0 }] }, options: gaugeConfig });
             charts.gaugeLeverage = new Chart(document.getElementById('gaugeLeverageRatio').getContext('2d'), { type: 'doughnut', data: { datasets: [{ data: [0, 100], backgroundColor: ['#e2e8f0', '#e2e8f0'], borderWidth: 0 }] }, options: gaugeConfig });
         
-            // Scatter Chart Initialization
             charts.scatter = new Chart(document.getElementById('scatterChart').getContext('2d'), {
                 type: 'scatter',
                 data: {
@@ -1337,7 +1459,7 @@
             if (btnExportCSV) {
                 btnExportCSV.addEventListener('click', () => {
                     if (!window.consolidatedHoldings || window.consolidatedHoldings.length === 0) {
-                        alert("尚無資料可匯出！"); return;
+                        showToast("尚無資料可匯出！", "alert-triangle"); return;
                     }
                     let csvContent = "\uFEFF";
                     csvContent += "標的名稱,總股數,持有均價,現價,總成本,總市值,累積損益,報酬率\n";
@@ -1359,6 +1481,7 @@
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
+                    showToast("CSV 總帳表匯出成功！", "check-circle");
                 });
             }
 
@@ -1501,6 +1624,14 @@
             if (charts.fx) charts.fx.update();
             if (charts.account) charts.account.update();
             if (charts.topHoldings) charts.topHoldings.update();
+            
+            if (charts.clecRadar) {
+                charts.clecRadar.options.scales.r.angleLines.color = isDark ? '#334155' : '#e2e8f0';
+                charts.clecRadar.options.scales.r.grid.color = isDark ? '#1e293b' : '#f1f5f9';
+                charts.clecRadar.options.scales.r.pointLabels.color = isDark ? '#94A3B8' : '#64748b';
+                charts.clecRadar.update();
+            }
+
             if (charts.scatter) {
                 charts.scatter.options.scales.x.grid.color = (ctx) => ctx.tick.value === 0 ? (isDark ? '#475569' : '#94a3b8') : (isDark ? '#1e293b' : '#f1f5f9');
                 charts.scatter.options.scales.y.grid.color = (ctx) => ctx.tick.value === 0 ? (isDark ? '#475569' : '#94a3b8') : (isDark ? '#1e293b' : '#f1f5f9');
@@ -1633,14 +1764,34 @@
                 } catch(err) { console.warn('快取寫入失敗，可能檔案過大:', err); }
                 parseExcelBuffer(e.target.result);
                 if (elStatus) { elStatus.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i> 更新成功'; elStatus.className = 'px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-sm font-medium flex items-center gap-1'; }
+                showToast("Excel 資料解析與載入成功！", "check-circle");
                 lucide.createIcons();
             };
             reader.readAsArrayBuffer(file);
         });
 
-        document.getElementById('btnClearCache').addEventListener('click', function() {
-            if(confirm('確定要清除本機記憶的 Excel 資料嗎？（清除後需重新上傳檔案）')) { localStorage.removeItem('cfa_excel_cache'); location.reload(); }
-        });
+        // Clear Cache Dialog Modal Bindings
+        const btnClearCache = document.getElementById('btnClearCache');
+        const confirmClearModal = document.getElementById('confirmClearCacheModal');
+        const btnCloseConfirmClear = document.getElementById('btnCloseConfirmClear');
+        const btnCancelClearCache = document.getElementById('btnCancelClearCache');
+        const btnConfirmClearCache = document.getElementById('btnConfirmClearCache');
+
+        if (btnClearCache) {
+            btnClearCache.addEventListener('click', () => {
+                if (confirmClearModal) confirmClearModal.classList.add('active');
+            });
+        }
+        if (btnCloseConfirmClear) btnCloseConfirmClear.addEventListener('click', () => confirmClearModal.classList.remove('active'));
+        if (btnCancelClearCache) btnCancelClearCache.addEventListener('click', () => confirmClearModal.classList.remove('active'));
+        if (btnConfirmClearCache) {
+            btnConfirmClearCache.addEventListener('click', () => {
+                localStorage.removeItem('cfa_excel_cache');
+                confirmClearModal.classList.remove('active');
+                showToast("本機暫存資料已清除！", "trash-2");
+                setTimeout(() => location.reload(), 600);
+            });
+        }
 
         function processDashboard(rows) {
             let totalAsset = 0, totalCost = 0, levTotal = 0;
@@ -1674,14 +1825,13 @@
                 col.type = findColExact(['股債', '資產'], 1); 
                 col.strat = findColExact(['性質', '策略'], 2); 
                 col.lev = findColExact(['槓桿'], 3); 
-                col.clec = findColExact(['CLEC 策略', 'CLEC策略', 'CLEC', '策略碼'], 4); // 優先偵測 E 欄
+                col.clec = findColExact(['CLEC 策略', 'CLEC策略', 'CLEC', '策略碼'], 4);
                 col.name = findColExact(['標的名稱'], 5); 
                 col.shares = findColExact(['股數'], 6); 
                 col.cost = findColExact(['總成本', '成本'], 8); 
                 col.marketVal = findColExact(['總市值', '市價'], 10); 
                 col.acc = findColExact(['帳戶', '證券商', '券商', '銀行'], 14); 
                 
-                // 嚴格精準搜尋標題為「幣別」之欄位，杜絕誤抓數值型「匯率」欄
                 let idxFxExact = hr.findIndex(c => c !== undefined && c !== null && String(c).trim().replace(/\s+/g, '') === '幣別');
                 if (idxFxExact !== -1) {
                     col.fx = idxFxExact;
@@ -1752,7 +1902,7 @@
                         window.globalHoldingsList.push({ name: name, shares: parseNum(r[col.shares]), cost: cost, marketVal: marketVal });
                     }
 
-                    // 累加 CLEC 策略池 (0:類現金, 1:市值型, 2:正二型, 3:與此策略無關)
+                    // 累加 CLEC 策略池
                     let rawClecCode = r[col.clec];
                     let clecCode = null;
                     if (rawClecCode !== undefined && rawClecCode !== null && String(rawClecCode).trim() !== '') {
@@ -1846,7 +1996,6 @@
             portfolioSnapshot.annVol = annVol;
             portfolioSnapshot.sharpe = annVol > 0 ? (cagr - 0.02) / annVol : 0;
 
-            // OLS Scatter Plot Calculation (Max 36 months)
             if (idxReturns.length > 0 && idxReturns.length === portReturns.length) {
                 let lookback = 36;
                 let startIndex = Math.max(0, portReturns.length - lookback);
@@ -1989,7 +2138,6 @@
 
             if (charts.account) { charts.account.data.labels = Object.keys(accs); charts.account.data.datasets[0].data = Object.values(accs); charts.account.data.datasets[0].backgroundColor = ['#e11d48', '#0ea5e9', '#f59e0b', '#8b5cf6', '#14b8a6', '#f43f5e']; charts.account.update(); }
             
-            // 動態渲染幣別分佈圓餅圖
             if (charts.fx) {
                 let fxKeys = Object.keys(fxs);
                 let fxVals = Object.values(fxs);
@@ -2030,7 +2178,7 @@
             }
             renderLedgerTable();
 
-            // 執行 CLEC 4:3:3 雷達即時渲染 (含安全隔離防護)
+            // 執行 CLEC 4:3:3 雷達即時渲染
             try {
                 renderCLECRadar(clecPool);
             } catch (radarErr) {
@@ -2250,19 +2398,23 @@
 
                 const isDark = document.documentElement.classList.contains('dark');
                 const pdfHeader = document.createElement('div'); pdfHeader.id = 'temp-pdf-header';
-                pdfHeader.innerHTML = `<div style="text-align: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid ${isDark ? '#334155' : '#e2e8f0'}; page-break-inside: avoid; break-inside: avoid;"><h1 style="font-size: 26px; font-weight: bold; color: ${isDark ? '#f1f5f9' : '#1e293b'}; margin: 0;">個人財務績效報告</h1><p style="font-size: 13px; color: ${isDark ? '#94a3b8' : '#64748b'}; margin-top: 6px;">CFA 理財小幫手 | 匯出時間：${new Date().toLocaleString('zh-TW')} | 報告版本：V2.9.7 旗艦版</p></div>`;
+                pdfHeader.innerHTML = `<div style="text-align: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid ${isDark ? '#334155' : '#e2e8f0'}; page-break-inside: avoid; break-inside: avoid;"><h1 style="font-size: 26px; font-weight: bold; color: ${isDark ? '#f1f5f9' : '#1e293b'}; margin: 0;">個人財務績效報告</h1><p style="font-size: 13px; color: ${isDark ? '#94a3b8' : '#64748b'}; margin-top: 6px;">CFA 理財小幫手 | 匯出時間：${new Date().toLocaleString('zh-TW')} | 報告版本：V2.9.8 旗艦版</p></div>`;
                 content.insertBefore(pdfHeader, content.firstChild);
 
                 await new Promise(resolve => setTimeout(resolve, 300));
                 const updateDateText = (document.getElementById('valUpdateDate')?.innerText || '最新').replace(/[\/:*?"<>|]/g, '');
-                const filename = `財務績效報告_V2.9.7_${updateDateText}.pdf`;
+                const filename = `財務績效報告_V2.9.8_${updateDateText}.pdf`;
 
                 const opt = { margin: [10, 10, 15, 10], filename: filename, image: { type: 'jpeg', quality: 1.0 }, html2canvas: { scale: 2, useCORS: true, scrollY: 0, backgroundColor: isDark ? '#020617' : '#f8fafc' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['.glass-card', '#temp-pdf-header'] } };
                 await html2pdf().set(opt).from(content).toPdf().get('pdf').then(function (pdf) {
                     const totalPages = pdf.internal.getNumberOfPages(); const pageWidth = pdf.internal.pageSize.getWidth(); const pageHeight = pdf.internal.pageSize.getHeight();
                     for (let i = 1; i <= totalPages; i++) { pdf.setPage(i); pdf.setFontSize(10); pdf.setTextColor(120); pdf.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 8, { align: 'center' }); }
                 }).save();
-            } catch (err) { console.error('PDF 匯出錯誤:', err); alert(`匯出失敗：${err.message || err}`); } 
+                showToast("PDF 報告匯出完成！", "file-check");
+            } catch (err) { 
+                console.error('PDF 匯出錯誤:', err); 
+                showToast(`匯出失敗：${err.message || err}`, "alert-circle"); 
+            } 
             finally {
                 const header = document.getElementById('temp-pdf-header'); if (header) header.remove();
                 const ignores = document.querySelectorAll('[data-html2canvas-ignore="true"]');
@@ -2275,8 +2427,55 @@
         const btnApiKeyConfig = document.getElementById('btnApiKeyConfig'); const apiKeyModal = document.getElementById('apiKeyModal'); const btnCloseApiKeyModal = document.getElementById('btnCloseApiKeyModal'); const btnSaveApiKey = document.getElementById('btnSaveApiKey'); const btnClearApiKey = document.getElementById('btnClearApiKey'); const inputApiKey = document.getElementById('inputApiKey');
         if(btnApiKeyConfig) { btnApiKeyConfig.addEventListener('click', () => { inputApiKey.value = localStorage.getItem('gemini_api_key') || ''; if(apiKeyModal) apiKeyModal.classList.add('active'); }); }
         if(btnCloseApiKeyModal) btnCloseApiKeyModal.addEventListener('click', () => { if(apiKeyModal) apiKeyModal.classList.remove('active'); });
-        if(btnSaveApiKey) { btnSaveApiKey.addEventListener('click', () => { const val = inputApiKey.value.trim(); if(val) { localStorage.setItem('gemini_api_key', val); alert('API Key 已安全儲存於本地！'); apiKeyModal.classList.remove('active'); } else { alert('請輸入有效的 API Key'); } }); }
-        if(btnClearApiKey) { btnClearApiKey.addEventListener('click', () => { localStorage.removeItem('gemini_api_key'); inputApiKey.value = ''; alert('API Key 已清除！'); }); }
+        if(btnSaveApiKey) { 
+            btnSaveApiKey.addEventListener('click', () => { 
+                const val = inputApiKey.value.trim(); 
+                if(val) { 
+                    localStorage.setItem('gemini_api_key', val); 
+                    showToast('API Key 已安全儲存於本地！', 'check-circle'); 
+                    apiKeyModal.classList.remove('active'); 
+                } else { 
+                    showToast('請輸入有效的 API Key', 'alert-triangle'); 
+                } 
+            }); 
+        }
+        if(btnClearApiKey) { 
+            btnClearApiKey.addEventListener('click', () => { 
+                localStorage.removeItem('gemini_api_key'); 
+                inputApiKey.value = ''; 
+                showToast('API Key 已成功清除！', 'trash-2'); 
+            }); 
+        }
+
+        // Custom FIRE Target Prompt Modal
+        const btnEditFireTarget = document.getElementById('btnEditFireTarget');
+        const fireTargetModal = document.getElementById('fireTargetModal');
+        const btnCloseFireModal = document.getElementById('btnCloseFireModal');
+        const btnCancelFireModal = document.getElementById('btnCancelFireModal');
+        const btnConfirmFireModal = document.getElementById('btnConfirmFireModal');
+        const inputFireTargetVal = document.getElementById('inputFireTargetVal');
+
+        if (btnEditFireTarget) {
+            btnEditFireTarget.addEventListener('click', () => {
+                if (inputFireTargetVal) inputFireTargetVal.value = globalFireTarget / 10000;
+                if (fireTargetModal) fireTargetModal.classList.add('active');
+            });
+        }
+        if (btnCloseFireModal) btnCloseFireModal.addEventListener('click', () => fireTargetModal.classList.remove('active'));
+        if (btnCancelFireModal) btnCancelFireModal.addEventListener('click', () => fireTargetModal.classList.remove('active'));
+        if (btnConfirmFireModal) {
+            btnConfirmFireModal.addEventListener('click', () => {
+                const newVal = parseFloat(inputFireTargetVal.value);
+                if (!isNaN(newVal) && newVal > 0) {
+                    globalFireTarget = newVal * 10000;
+                    fireTargetModal.classList.remove('active');
+                    refreshRiskDOM(portfolioSnapshot.totalAsset);
+                    showToast(`退休目標已更新為 ${newVal} 萬元！`, 'check-circle');
+                } else {
+                    showToast('請輸入大於 0 的有效目標金額', 'alert-triangle');
+                }
+            });
+        }
 
         const btnAiDiagnosis = document.getElementById('btnAiDiagnosis'); const aiModal = document.getElementById('aiModal'); const btnCloseModal = document.getElementById('btnCloseModal'); const aiLoading = document.getElementById('aiLoading'); const aiResult = document.getElementById('aiResult');
         if(btnAiDiagnosis) { btnAiDiagnosis.addEventListener('click', async () => { if(aiModal) aiModal.classList.add('active'); let currentApiKey = localStorage.getItem('gemini_api_key') || ""; fetchGeminiDiagnosis(currentApiKey); }); }
@@ -2284,7 +2483,7 @@
         if(aiModal) aiModal.addEventListener('click', (e) => { if (e.target === aiModal) aiModal.classList.remove('active'); });
 
         async function fetchGeminiDiagnosis(apiKey) {
-            if(aiLoading) { aiLoading.classList.remove('flex'); aiLoading.classList.add('hidden'); } if(aiResult) { aiResult.classList.add('hidden'); aiResult.innerHTML = ''; }
+            if(aiLoading) { aiLoading.classList.remove('hidden'); aiLoading.classList.add('flex'); } if(aiResult) { aiResult.classList.add('hidden'); aiResult.innerHTML = ''; }
             const currentRatio = macroData.F63 !== null ? macroData.F63 : (globalCurrentLiabilities > 0 ? (portfolioSnapshot.cash + portfolioSnapshot.bond) / globalCurrentLiabilities : 0);
             const debtRatio = portfolioSnapshot.totalAsset > 0 ? globalTotalDebt / portfolioSnapshot.totalAsset : 0;
             const displayLevAmt = portfolioSnapshot.leverageAsset;
