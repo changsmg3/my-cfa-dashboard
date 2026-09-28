@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>CFA 個人財務績效數位儀表板 V2.9.8</title>
+    <title>CFA 個人財務績效數位儀表板 V3.0.3 旗艦版</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#f8fafc">
@@ -11,6 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
+    <!-- Tailwind CSS Engine -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -119,7 +120,6 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
         .dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #475569; }
 
-        /* Floating Toast Message Box */
         #appToast {
             position: fixed;
             bottom: 24px;
@@ -138,7 +138,7 @@
     </style>
 </head>
 <body class="transition-all duration-300 relative text-[#2C4A73] dark:text-slate-400">
-    <!-- Floating Toast Notification -->
+    <!-- Floating Toast Notification (replaces alert) -->
     <div id="appToast" class="px-5 py-2.5 rounded-full text-sm font-medium shadow-xl flex items-center gap-2 border bg-slate-900 text-white border-slate-700 dark:bg-white dark:text-slate-900">
         <i id="toastIcon" data-lucide="info" class="w-4 h-4"></i>
         <span id="toastMsg">通知訊息</span>
@@ -149,7 +149,7 @@
             <div>
                 <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-200 flex items-center gap-2">
                     <i data-lucide="layout-dashboard" class="text-indigo-600 dark:text-indigo-400"></i>
-                    個人財務績效數位儀表板 <span class="text-sm bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full ml-2 hidden md:inline-block border border-transparent dark:border-indigo-800">V2.9.8 旗艦版</span>
+                    個人財務績效數位儀表板 <span class="text-sm bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full ml-2 hidden md:inline-block border border-transparent dark:border-indigo-800">V3.0.3 旗艦版</span>
                 </h1>
                 <p class="text-slate-500 dark:text-slate-400 mt-1">更新日期：<span id="valUpdateDate">請上傳 Excel 檔案</span> | 追蹤檔數：<span id="valHoldingsCount">--</span> 檔</p>
             </div>
@@ -242,7 +242,7 @@
                 </div>
                 <div class="glass-card flex flex-col justify-center lg:col-span-3 overflow-hidden">
                     <h3 class="font-medium text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-                        <i data-lucide="grid" class="w-4 h-4 text-emerald-500"></i> 月度純報酬率熱力圖 (MoM Heatmap)
+                        <i data-lucide="grid" class="w-4 h-4 text-emerald-500"></i> 月度純報酬率熱力圖 (幾何連乘法自 114 年起)
                     </h3>
                     <div class="overflow-x-auto pb-2">
                         <div id="heatmapContainer"><p class="text-sm text-slate-400 py-4 text-center">尚無資料，請上傳 Excel 檔案</p></div>
@@ -259,7 +259,9 @@
             <div class="grid grid-cols-1 gap-6 mb-6">
                 <div class="glass-card overflow-hidden" id="trendContainer">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-medium text-slate-800 dark:text-slate-200 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-indigo-500"></i> 總資產與市場損益連動趨勢 (Sub-charts)</h3>
+                        <h3 class="font-medium text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                            <i data-lucide="trending-up" class="w-4 h-4 text-indigo-500"></i> 總資產與市場損益連動趨勢 (方案 2A 基金淨值起點歸一化)
+                        </h3>
                         <select id="timeframeSelect" class="text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:border-indigo-400 dark:focus:border-indigo-500" data-html2canvas-ignore="true">
                             <option value="monthly">按月顯示</option>
                             <option value="quarterly">按季顯示</option>
@@ -268,7 +270,7 @@
                         </select>
                     </div>
                     <div class="h-64 w-full relative"><canvas id="assetTrendChart"></canvas></div>
-                    <div class="h-32 w-full relative mt-2"><canvas id="pnlBarChart"></canvas></div>
+                    <div class="h-32 w-full relative mt-0.5"><canvas id="pnlBarChart"></canvas></div>
                 </div>
             </div>
         </section>
@@ -391,7 +393,7 @@
                                 </div>
                             </div>
                             <ul id="customSelectList" class="max-h-48 overflow-y-auto py-1 custom-scrollbar">
-                                <li class="px-3 py-2 text-sm text-slate-500 text-center">請先上傳檔案...</li>
+                                <li class="px-3 py-2 text-sm text-slate-500 dark:text-slate-400 text-center">請先上傳檔案...</li>
                             </ul>
                         </div>
                         <select id="inspectStockSelect" class="hidden">
@@ -424,19 +426,24 @@
         <div class="html2pdf__page-break"></div>
 
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-            <!-- 模塊 1：績效與策略模塊 -->
             <section class="glass-card overflow-hidden transition-all duration-500 flex flex-col justify-between" id="strategyCardContainer">
                 <div>
-                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 text-slate-800 dark:text-slate-200">
-                        <i data-lucide="bar-chart-2" class="text-emerald-500 dark:text-emerald-400 w-5 h-5"></i> 績效與策略模塊
-                    </h2>
+                    <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-200 dark:border-slate-800">
+                        <h2 class="text-xl font-semibold flex items-center gap-2 text-slate-800 dark:text-slate-200">
+                            <i data-lucide="bar-chart-2" class="text-emerald-500 dark:text-emerald-400 w-5 h-5"></i> 績效與策略模塊
+                        </h2>
+                        <div class="flex items-center gap-2" data-html2canvas-ignore="true">
+                            <button id="btnToggleStrategyStack" class="text-xs px-2.5 py-1 rounded-full font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center gap-1 shadow-sm" title="切換堆疊/分組直方圖">
+                                <i data-lucide="layers" class="w-3.5 h-3.5"></i> <span id="lblStrategyStackMode">堆疊</span>
+                            </button>
+                        </div>
+                    </div>
                     <div class="h-64 w-full relative flex flex-col justify-center items-center">
                         <canvas id="strategyChart"></canvas>
                     </div>
                 </div>
             </section>
             
-            <!-- 模塊 2：CLEC 4:3:3 幾何再平衡雷達 (方案三：雙模態左圖右文) -->
             <section class="glass-card overflow-hidden flex flex-col justify-between" id="clecRadarContainer">
                 <div>
                     <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-200 dark:border-slate-800">
@@ -451,16 +458,12 @@
                         <span>排除無關(3)：<b id="valClecExcluded" class="text-slate-500">0 萬</b></span>
                     </div>
 
-                    <!-- 雙模態佈局：桌機左圖右文，手機自動堆疊 -->
                     <div class="flex flex-col sm:flex-row items-center gap-3">
-                        <!-- 左側：幾何雷達圖 (Spider Radar) -->
                         <div class="w-full sm:w-5/12 h-52 relative flex items-center justify-center">
                             <canvas id="clecRadarChart"></canvas>
                         </div>
 
-                        <!-- 右側：緊湊型量化狀態清單 -->
                         <div class="w-full sm:w-7/12 space-y-2 text-xs">
-                            <!-- 市值型 (標籤 1 / 目標 40%) -->
                             <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/60">
                                 <div class="flex justify-between items-center mb-0.5">
                                     <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
@@ -476,7 +479,6 @@
                                 </div>
                             </div>
 
-                            <!-- 正二型 (標籤 2 / 目標 30%) -->
                             <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/60">
                                 <div class="flex justify-between items-center mb-0.5">
                                     <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
@@ -492,7 +494,6 @@
                                 </div>
                             </div>
 
-                            <!-- 類現金 (標籤 0 / 目標 30%) -->
                             <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/60">
                                 <div class="flex justify-between items-center mb-0.5">
                                     <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
@@ -511,7 +512,6 @@
                     </div>
                 </div>
 
-                <!-- 動態再平衡具體行動指引 (±5% 閾值警示) -->
                 <div id="boxClecAdvice" class="mt-3 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60 text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">
                     <div class="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300 mb-0.5">
                         <i data-lucide="shield-check" class="w-3.5 h-3.5 text-indigo-500"></i> 再平衡操作指引 (±5% 閾值)
@@ -520,7 +520,6 @@
                 </div>
             </section>
 
-            <!-- 模塊 3：後勤與外匯區 (Logistics & FX) -->
             <section class="glass-card flex flex-col justify-between">
                 <div>
                     <h2 class="text-xl font-semibold mb-4 flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 text-slate-800 dark:text-slate-200">
@@ -545,7 +544,7 @@
         </div>
     </div>
 
-    <!-- AI Modal -->
+    <!-- AI Advisor Modal -->
     <div id="aiModal" class="modal-overlay" data-html2canvas-ignore="true">
         <div class="modal-content relative w-[95vw] md:w-[90%] md:max-w-3xl !p-5 md:!p-8">
             <button id="btnCloseModal" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
@@ -555,7 +554,7 @@
         </div>
     </div>
 
-    <!-- 預測計算機與散布圖 Modal -->
+    <!-- Sensitivity Prediction Modal -->
     <div id="predictModal" class="modal-overlay" data-html2canvas-ignore="true">
         <div class="modal-content relative w-[95vw] md:w-[90%] !max-w-2xl !p-6 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 shadow-2xl">
             <button id="btnClosePredict" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
@@ -619,7 +618,7 @@
                 <div class="flex flex-col">
                     <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
                         <i data-lucide="scatter-chart" class="w-4 h-4 text-indigo-500"></i>
-                        量化壓力測試模型 (近 36 個月)
+                        量化壓力測試模型 (民國 114 年起)
                     </h3>
                     <div class="h-48 w-full relative mb-3">
                         <canvas id="scatterChart"></canvas>
@@ -660,10 +659,10 @@
         </div>
     </div>
 
-    <!-- Custom Prompt Modal for FIRE Target -->
+    <!-- FIRE Target Modal -->
     <div id="fireTargetModal" class="modal-overlay" data-html2canvas-ignore="true">
         <div class="modal-content relative !max-w-sm !p-6">
-            <button id="btnCloseFireModal" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <button id="btnCloseFireModal" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
             <div class="flex items-center gap-3 mb-3">
                 <div class="p-2 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-lg"><i data-lucide="flame" class="w-5 h-5"></i></div>
                 <h3 class="text-lg font-bold text-slate-800 dark:text-slate-200">修改 FIRE 退休目標</h3>
@@ -677,10 +676,10 @@
         </div>
     </div>
 
-    <!-- Custom Confirm Modal for Clearing Cache -->
+    <!-- Clear Cache Confirm Modal -->
     <div id="confirmClearCacheModal" class="modal-overlay" data-html2canvas-ignore="true">
         <div class="modal-content relative !max-w-sm !p-6">
-            <button id="btnCloseConfirmClear" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <button id="btnCloseConfirmClear" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
             <div class="flex items-center gap-3 mb-3">
                 <div class="p-2 bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 rounded-lg"><i data-lucide="alert-triangle" class="w-5 h-5"></i></div>
                 <h3 class="text-lg font-bold text-slate-800 dark:text-slate-200">確認清除暫存？</h3>
@@ -693,7 +692,7 @@
         </div>
     </div>
 
-    <!-- Ledger Modal -->
+    <!-- Ledger Details Modal -->
     <div id="ledgerModal" class="modal-overlay" data-html2canvas-ignore="true">
         <div class="modal-content relative !max-w-[98vw] xl:!max-w-[1400px] !p-4 md:!p-8 !max-h-[90vh]">
             <button id="btnCloseLedger" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors z-20"><i data-lucide="x" class="w-6 h-6"></i></button>
@@ -761,7 +760,10 @@
         let charts = {};
         let portfolioSnapshot = { totalAsset: 0, totalDebt: 0, currentLiabilities: 0, cash: 0, bond: 0, stock: 0, gold: 0, leverageAsset: 0, ytdRate: 0, cagr: 0, topHoldingsNames: [], beta: 1.0, mdd: 0, annVol: 0, sharpe: 0 };
         let globalTrendData = { labels: [], values: [], fundA: [], fundB: [], pnl: [] };
-        let macroData = { S7: null, S9: null, S10: null, S11: null, S12: null, S13: null, S14: null, S15: null, F63: null, S17: null };
+        let globalStrategyData = { labels: [], mcap: [], tech: [], single: [] };
+        
+        // V3.0.3 旗艦鎖定：精準對齊控制台重要儲存格
+        let macroData = { V7: null, V8: null, V9: null, V10: null, V11: null, V12: null, V13: null, V14: null, V15: null, F63: null, V17: null };
         let heatmapData = {};
         let assetHistory = {}; 
         let indexHistory = {}; 
@@ -1030,10 +1032,9 @@
                     }
                 }
 
-                // 觸發條件：單一資產偏差 >= ±5%
                 const isRebalanceTriggered = Math.abs(devMcap) >= 0.05 || Math.abs(devLev) >= 0.05 || Math.abs(devCash) >= 0.05;
 
-                // 更新幾何雷達圖 (V2.9.8)
+                // 更新幾何雷達圖
                 if (charts.clecRadar) {
                     charts.clecRadar.data.datasets[1].data = [
                         parseFloat((rMcap * 100).toFixed(1)),
@@ -1238,6 +1239,8 @@
                 } 
             });
 
+            // V3.0.3 核心升級：P/Q 欄淨值起點歸一化 + 缺值自然斷線 + 專屬高精準度 Tooltip (小數點 2 位 / NA 支援)
+            // 建議 3 實作：將 scales 移出 plugins 置於 options 第一層，開啟 offset: true，隱藏 X 軸文字並保留貫穿網格線
             charts.trend = new Chart(document.getElementById('assetTrendChart').getContext('2d'), { 
                 type: 'line', 
                 data: { 
@@ -1245,20 +1248,88 @@
                     datasets: [
                         { label: '總資產 (萬)', data: [], borderColor: '#6366f1', fill: true, backgroundColor: 'rgba(99, 102, 241, 0.1)', tension: 0.4, yAxisID: 'y' }, 
                         { label: '大盤對照', data: [], borderColor: '#cbd5e1', borderDash: [5, 5], fill: false, tension: 0.4, yAxisID: 'y' },
-                        { label: '駿利平衡基金', data: [], borderColor: '#f59e0b', fill: false, tension: 0.4, yAxisID: 'y', spanGaps: true },
-                        { label: '0050 ETF', data: [], borderColor: '#10b981', fill: false, tension: 0.4, yAxisID: 'y', spanGaps: true }
+                        { label: '駿利亨德森平衡基金', data: [], borderColor: '#f59e0b', fill: false, tension: 0.4, yAxisID: 'y', spanGaps: false },
+                        { label: '元大台灣50ETF連結基金', data: [], borderColor: '#10b981', fill: false, tension: 0.4, yAxisID: 'y', spanGaps: false }
                     ] 
                 }, 
                 options: { 
-                    maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                    maintainAspectRatio: false, 
+                    interaction: { mode: 'index', intersect: false },
                     onHover: (e, activeEls) => { if(charts.pnl) syncChartHover(e, activeEls, charts.pnl); },
-                    layout: { padding: { bottom: 0, left: 0, right: 0 } }, 
-                    plugins: { legend: { position: 'top', align: 'end', labels: { boxWidth: 12, usePointStyle: true, pointStyle: 'rectRounded' } }, tooltip: { callbacks: { label: function(c) { return c.dataset.label + ': ' + new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 1 }).format(c.raw); } } } },
+                    layout: { padding: { top: 0, bottom: 0, left: 0, right: 0 } }, 
+                    plugins: { 
+                        legend: { 
+                            position: 'top', 
+                            align: 'end', 
+                            labels: { boxWidth: 12, usePointStyle: true, pointStyle: 'rectRounded' } 
+                        }, 
+                        tooltip: { 
+                            filter: function() { return true; },
+                            callbacks: { 
+                                label: function(c) {
+                                    const dIdx = c.datasetIndex;
+                                    const idx = c.dataIndex;
+                                    const ds = c.chart.data.datasets[dIdx];
+                                    const val = c.raw;
+
+                                    if (dIdx === 0) {
+                                        return `${ds.label}: NT$ ${new Intl.NumberFormat('zh-TW', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(val || 0)} 萬`;
+                                    } else if (dIdx === 1) {
+                                        return `${ds.label}: NT$ ${new Intl.NumberFormat('zh-TW', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(val || 0)} 萬`;
+                                    } else if (dIdx === 2 || dIdx === 3) {
+                                        const rawNavList = ds.rawNav || [];
+                                        const baseNav = ds.baseNav;
+                                        const rawNav = (rawNavList && idx < rawNavList.length) ? rawNavList[idx] : null;
+
+                                        // 若缺值點時（如 11509 駿利基金），Tooltip 依指定嚴格顯示「NA」
+                                        if (rawNav === null || rawNav === undefined || isNaN(rawNav)) {
+                                            return `${ds.label}: NA`;
+                                        }
+
+                                        const navStr = Number(rawNav).toFixed(2);
+                                        let retStr = '';
+                                        if (baseNav && baseNav > 0) {
+                                            const cumRet = ((rawNav - baseNav) / baseNav) * 100;
+                                            retStr = ` (淨值 ${navStr}, 累積 ${cumRet >= 0 ? '+' : ''}${cumRet.toFixed(2)}%)`;
+                                        } else {
+                                            retStr = ` (淨值 ${navStr})`;
+                                        }
+                                        const eqAssetStr = (val !== null && val !== undefined) ? `NT$ ${new Intl.NumberFormat('zh-TW', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(val)} 萬` : 'NA';
+                                        return `${ds.label}: ${eqAssetStr}${retStr}`;
+                                    }
+                                    return `${ds.label}: ${val}`;
+                                }
+                            } 
+                        }
+                    },
                     scales: {
-                        x: { ticks: { display: false }, grid: { drawBorder: false }, offset: true },
-                        y: { type: 'linear', display: true, position: 'left', afterFit: (scale) => { scale.width = 65; } },
-                        y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { display: false }, afterFit: (scale) => { scale.width = 30; } }
-                    }
+                        x: { 
+                            offset: true, 
+                            ticks: { display: false }, 
+                            grid: { 
+                                display: true, 
+                                drawBorder: false,
+                                color: (ctx) => document.documentElement.classList.contains('dark') ? 'rgba(51, 65, 85, 0.4)' : 'rgba(226, 232, 240, 0.6)'
+                            } 
+                        },
+                        y: { 
+                            type: 'linear', 
+                            display: true, 
+                            position: 'left', 
+                            afterFit: (scale) => { scale.width = 65; },
+                            grid: {
+                                color: (ctx) => document.documentElement.classList.contains('dark') ? 'rgba(51, 65, 85, 0.4)' : 'rgba(226, 232, 240, 0.6)'
+                            }
+                        },
+                        y1: { 
+                            type: 'linear', 
+                            display: true, 
+                            position: 'right', 
+                            grid: { drawOnChartArea: false }, 
+                            ticks: { display: false }, 
+                            afterFit: (scale) => { scale.width = 30; } 
+                        }
+                    } 
                 } 
             });
 
@@ -1266,11 +1337,45 @@
                 type: 'bar',
                 data: { labels: [], datasets: [{ label: '市場損益 (萬)', data: [], backgroundColor: (ctx) => { return (ctx.raw||0) >= 0 ? 'rgba(244, 63, 94, 0.85)' : 'rgba(16, 185, 129, 0.85)'; }, borderRadius: 4, hoverBackgroundColor: (ctx) => { return (ctx.raw||0) >= 0 ? 'rgba(225, 29, 72, 1)' : 'rgba(5, 150, 105, 1)'; } }] },
                 options: {
-                    maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                    maintainAspectRatio: false, 
+                    interaction: { mode: 'index', intersect: false },
                     onHover: (e, activeEls) => { if(charts.trend) syncChartHover(e, activeEls, charts.trend); },
-                    layout: { padding: { top: 0, left: 0, right: 0 } },
-                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c) { let v = c.raw; return c.dataset.label + ': ' + (v>0?'+':'') + new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 1 }).format(v); } } } },
-                    scales: { x: { grid: { display: false } }, y: { type: 'linear', position: 'left', afterFit: (scale) => { scale.width = 65; }, ticks: { callback: function(v) { return v>0?'+'+v:v; }, maxTicksLimit: 5 } }, y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { display: false }, afterFit: (scale) => { scale.width = 30; } } }
+                    layout: { padding: { top: 0, bottom: 0, left: 0, right: 0 } },
+                    plugins: { 
+                        legend: { display: false }, 
+                        tooltip: { callbacks: { label: function(c) { let v = c.raw; return c.dataset.label + ': ' + (v>0?'+':'') + new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 1 }).format(v); } } } 
+                    },
+                    scales: { 
+                        x: { 
+                            offset: true,
+                            grid: { 
+                                display: true, 
+                                drawBorder: false,
+                                color: (ctx) => document.documentElement.classList.contains('dark') ? 'rgba(51, 65, 85, 0.4)' : 'rgba(226, 232, 240, 0.6)'
+                            },
+                            ticks: {
+                                maxRotation: 0,
+                                autoSkip: false
+                            }
+                        }, 
+                        y: { 
+                            type: 'linear', 
+                            position: 'left', 
+                            afterFit: (scale) => { scale.width = 65; }, 
+                            ticks: { callback: function(v) { return v>0?'+'+v:v; }, maxTicksLimit: 5 },
+                            grid: {
+                                color: (ctx) => document.documentElement.classList.contains('dark') ? 'rgba(51, 65, 85, 0.4)' : 'rgba(226, 232, 240, 0.6)'
+                            }
+                        }, 
+                        y1: { 
+                            type: 'linear', 
+                            display: true, 
+                            position: 'right', 
+                            grid: { drawOnChartArea: false }, 
+                            ticks: { display: false }, 
+                            afterFit: (scale) => { scale.width = 30; } 
+                        } 
+                    }
                 }
             });
 
@@ -1279,7 +1384,74 @@
                 if(charts.pnl) { charts.pnl.setActiveElements([]); charts.pnl.tooltip.setActiveElements([]); charts.pnl.update(); }
             });
 
-            charts.strategy = new Chart(document.getElementById('strategyChart').getContext('2d'), { type: 'bar', data: { labels: [], datasets: [{ data: [] }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+                        charts.strategy = new Chart(document.getElementById('strategyChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [
+                        { label: '市值型', data: [], backgroundColor: '#6366f1', borderRadius: 3, stack: 'stock' },
+                        { label: '科技/產業型', data: [], backgroundColor: '#10b981', borderRadius: 3, stack: 'stock' },
+                        { label: '個股', data: [], backgroundColor: '#f59e0b', borderRadius: 3, stack: 'stock' }
+                    ]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            align: 'end',
+                            labels: { boxWidth: 10, usePointStyle: true, pointStyle: 'circle', font: { size: 10, weight: 'bold' } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(c) {
+                                    let v = c.raw || 0;
+                                    return `${c.dataset.label}: NT$ ${new Intl.NumberFormat('zh-TW', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v)} 萬`;
+                                },
+                                footer: function(items) {
+                                    let sum = items.reduce((acc, curr) => acc + (curr.raw || 0), 0);
+                                    return `股票市值合計: NT$ ${new Intl.NumberFormat('zh-TW', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(sum)} 萬`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: { display: false },
+                            ticks: { maxRotation: 0, font: { size: 10 } }
+                        },
+                        y: {
+                            stacked: true,
+                            ticks: {
+                                callback: function(v) { return v + ' 萬'; },
+                                maxTicksLimit: 5
+                            },
+                            grid: { color: (ctx) => document.documentElement.classList.contains('dark') ? 'rgba(51, 65, 85, 0.4)' : 'rgba(226, 232, 240, 0.6)' }
+                        }
+                    }
+                }
+            });
+
+            // 支援堆疊與分組切換
+            let isStrategyStacked = true;
+            const btnToggleStack = document.getElementById('btnToggleStrategyStack');
+            if (btnToggleStack) {
+                btnToggleStack.addEventListener('click', () => {
+                    isStrategyStacked = !isStrategyStacked;
+                    document.getElementById('lblStrategyStackMode').innerText = isStrategyStacked ? '堆疊' : '分組';
+                    if (charts.strategy) {
+                        charts.strategy.options.scales.x.stacked = isStrategyStacked;
+                        charts.strategy.options.scales.y.stacked = isStrategyStacked;
+                        charts.strategy.data.datasets.forEach(ds => {
+                            ds.stack = isStrategyStacked ? 'stock' : undefined;
+                        });
+                        charts.strategy.update();
+                    }
+                });
+            }
             
             const isDarkInit = document.documentElement.classList.contains('dark');
             charts.clecRadar = new Chart(document.getElementById('clecRadarChart').getContext('2d'), {
@@ -1685,11 +1857,61 @@
                 if (elUpdateDate) elUpdateDate.innerText = extractedDate;
 
                 if (dataSheet) {
-                    macroData.S7 = getCellVal(dataSheet, 'S7'); macroData.S9 = getCellVal(dataSheet, 'S9'); macroData.S10 = getCellVal(dataSheet, 'S10'); macroData.S11 = getCellVal(dataSheet, 'S11', true); macroData.S12 = getCellVal(dataSheet, 'S12', true); macroData.S13 = getCellVal(dataSheet, 'S13'); macroData.S14 = getCellVal(dataSheet, 'S14'); macroData.S15 = getCellVal(dataSheet, 'S15', true); macroData.F63 = getCellVal(dataSheet, 'F63', true); macroData.S17 = getCellVal(dataSheet, 'S17', true);
+                    // V3.0.3 鎖定：V7~V17 與 F63 特定儲存格精確讀取
+                    macroData.V7 = getCellVal(dataSheet, 'V7');   // 總資產
+                    macroData.V8 = getCellVal(dataSheet, 'V8');   // 總負債
+                    macroData.V9 = getCellVal(dataSheet, 'V9');   // 總成本
+                    macroData.V10 = getCellVal(dataSheet, 'V10'); // 累積損益
+                    macroData.V11 = getCellVal(dataSheet, 'V11', true); // 累積報酬率
+                    macroData.V12 = getCellVal(dataSheet, 'V12', true); // CAGR
+                    macroData.V13 = getCellVal(dataSheet, 'V13'); // 今年期初資產
+                    macroData.V14 = getCellVal(dataSheet, 'V14'); // 今年損益
+                    macroData.V15 = getCellVal(dataSheet, 'V15', true); // 今年報酬率
+                    macroData.F63 = getCellVal(dataSheet, 'F63', true); // 短期流動比率
+                    macroData.V17 = getCellVal(dataSheet, 'V17', true); // 槓桿安全比
                     
-                    const rowsObj = XLSX.utils.sheet_to_json(dataSheet, {header: "A", raw: true, defval: ""});
+                    const dataSheetRows = XLSX.utils.sheet_to_json(dataSheet, {header: 1, defval: ""});
+                    
+                    let dataHeaderIdx = 5;
+                    for (let i = 0; i < Math.min(10, dataSheetRows.length); i++) {
+                        const r = dataSheetRows[i];
+                        if (Array.isArray(r) && r.some(c => typeof c === 'string' && (c.includes('當月純報酬率') || c.includes('月純報酬率') || c.includes('總資產') || c.includes('市場損益')))) {
+                            dataHeaderIdx = i;
+                            break;
+                        }
+                    }
+
+                    const hrData = dataSheetRows[dataHeaderIdx] || [];
+                    const hrDataPrev = dataHeaderIdx > 0 ? (dataSheetRows[dataHeaderIdx - 1] || []) : [];
+
+                    const findDataCol = (keywords, defaultIdx) => {
+                        let idx = hrData.findIndex(c => c && keywords.some(k => String(c).trim() === k));
+                        if (idx !== -1) return idx;
+                        idx = hrData.findIndex(c => c && keywords.some(k => String(c).trim().includes(k)));
+                        if (idx !== -1) return idx;
+                        if (hrDataPrev && hrDataPrev.length) {
+                            idx = hrDataPrev.findIndex(c => c && keywords.some(k => String(c).trim().includes(k)));
+                            if (idx !== -1) return idx;
+                        }
+                        return defaultIdx;
+                    };
+
+                    // 自適應鎖定欄位：P 欄駿利平衡 (15)、Q 欄 0050 ETF (16)
+                    const colMapData = {
+                        ret: findDataCol(['當月純報酬率', '月純報酬率'], 12),
+                        asset: findDataCol(['總資產'], 7),
+                        pnl: findDataCol(['市場損益', '當月損益', '損益'], 11),
+                        idx: findDataCol(['大盤指數', '加權指數'], 14),
+                        fundA: findDataCol(['駿利亨德森平衡基金', '駿利平衡', '駿利', '平衡基金'], 15),
+                        fundB: findDataCol(['元大台灣50ETF連結基金', '元大台灣50', '0050 ETF', '0050', '50ETF'], 16),
+                        stratMcap: findDataCol(['市值型'], 8),
+                        stratTech: findDataCol(['科技/產業型', '科技產業型', '產業型'], 9),
+                        stratSingle: findDataCol(['個股'], 10)
+                    };
+
                     heatmapData = {}; assetHistory = {}; indexHistory = {};
                     let trendLabels = [], trendValues = [], trendFundA = [], trendFundB = [], trendPnl = [];
+                    let stratLabels = [], stratMcap = [], stratTech = [], stratSingle = [];
                     
                     let maxYM = 999999;
                     const today = new Date(); const todayYM = (today.getFullYear() - 1911) * 100 + today.getMonth() + 1;
@@ -1699,40 +1921,83 @@
                     if (matchYM) { globalExtractedYr = matchYM[1]; maxYM = Math.min(parseInt(matchYM[1] + matchYM[2], 10), todayYM); } 
                     else { maxYM = todayYM; }
 
-                    rowsObj.forEach(row => {
+                    // 自表頭下一列開始讀取歷史時序
+                    for (let rIdx = dataHeaderIdx + 1; rIdx < dataSheetRows.length; rIdx++) {
+                        const row = dataSheetRows[rIdx];
+                        if (!row || !row.length) continue;
+
                         let dateStr = "";
-                        for (let key in row) { let val = String(row[key] || '').trim(); if (val.match(/^11[0-9]{3}$/)) { dateStr = val; break; } }
+                        // 年月支援民國 114 年起所有月份 (11401 ~ )
+                        for (let j = 0; j < row.length; j++) {
+                            let val = String(row[j] || '').trim().replace(/[\/\.-]/g, '');
+                            if (val.match(/^11[4-9]\d{2}$/)) {
+                                dateStr = val;
+                                break;
+                            }
+                        }
 
                         if (dateStr !== "") {
                             let rowYM = parseInt(dateStr, 10);
-                            let yr = dateStr.substring(0, 3); let mo = dateStr.substring(3, 5);
-                            let ttVal = row.H, pnlVal = row.I, tPctVal = row.J, fundAVal = row.M, fundBVal = row.N, idxVal = row.L;
+                            if (rowYM >= 11401 && rowYM <= maxYM) {
+                                let yr = dateStr.substring(0, 3);
+                                let mo = dateStr.substring(3, 5);
 
-                            if (ttVal !== undefined && ttVal !== '') assetHistory[yr + mo] = parseNum(ttVal);
-                            if (idxVal !== undefined && idxVal !== '') indexHistory[yr + mo] = parseNum(idxVal);
+                                let ttVal = row[colMapData.asset];
+                                let pnlVal = row[colMapData.pnl];
+                                let tPctVal = row[colMapData.ret];
+                                let idxVal = row[colMapData.idx];
+                                let fundAVal = row[colMapData.fundA];
+                                let fundBVal = row[colMapData.fundB];
+                                let sMcapVal = row[colMapData.stratMcap];
+                                let sTechVal = row[colMapData.stratTech];
+                                let sSingleVal = row[colMapData.stratSingle];
 
-                            if (rowYM <= maxYM) {
-                                if (yr !== '113' && tPctVal !== undefined && tPctVal !== '') {
+                                if (ttVal !== undefined && ttVal !== '' && ttVal !== null) assetHistory[yr + mo] = parseNum(ttVal);
+                                if (idxVal !== undefined && idxVal !== '' && idxVal !== null) indexHistory[yr + mo] = parseNum(idxVal);
+
+                                if (tPctVal !== undefined && tPctVal !== '' && tPctVal !== null) {
                                     if (!heatmapData[yr]) heatmapData[yr] = {};
                                     let parsedI = parsePct(tPctVal);
                                     if (parsedI !== undefined) heatmapData[yr][mo] = parsedI;
                                 }
-                                if (ttVal !== undefined && ttVal !== '') {
-                                    trendLabels.push(`${yr}/${mo}`); trendValues.push(parseNum(ttVal) / 10000); trendFundA.push(fundAVal !== undefined && fundAVal !== '' ? parseNum(fundAVal) : null); trendFundB.push(fundBVal !== undefined && fundBVal !== '' ? parseNum(fundBVal) : null); trendPnl.push(pnlVal !== undefined && pnlVal !== '' ? parseNum(pnlVal) : 0);
+
+                                if (ttVal !== undefined && ttVal !== '' && ttVal !== null) {
+                                    trendLabels.push(`${yr}/${mo}`);
+                                    trendValues.push(parseNum(ttVal) / 10000);
+
+                                    // 嚴格判斷 P 欄與 Q 欄淨值，若無數值或為空則存入 null
+                                    let numFundA = (fundAVal !== undefined && fundAVal !== '' && fundAVal !== null) ? parseNum(fundAVal) : null;
+                                    let numFundB = (fundBVal !== undefined && fundBVal !== '' && fundBVal !== null) ? parseNum(fundBVal) : null;
+                                    if (fundAVal === undefined || fundAVal === '' || fundAVal === null) numFundA = null;
+                                    if (fundBVal === undefined || fundBVal === '' || fundBVal === null) numFundB = null;
+
+                                    trendFundA.push(numFundA);
+                                    trendFundB.push(numFundB);
+                                    trendPnl.push(pnlVal !== undefined && pnlVal !== '' && pnlVal !== null ? parseNum(pnlVal) : 0);
+
+                                    // I, J, K 欄策略資產數據讀取 (萬元)
+                                    let numMcap = (sMcapVal !== undefined && sMcapVal !== '' && sMcapVal !== null) ? parseNum(sMcapVal) / 10000 : 0;
+                                    let numTech = (sTechVal !== undefined && sTechVal !== '' && sTechVal !== null) ? parseNum(sTechVal) / 10000 : 0;
+                                    let numSingle = (sSingleVal !== undefined && sSingleVal !== '' && sSingleVal !== null) ? parseNum(sSingleVal) / 10000 : 0;
+                                    
+                                    stratLabels.push(`${yr}/${mo}`);
+                                    stratMcap.push(numMcap);
+                                    stratTech.push(numTech);
+                                    stratSingle.push(numSingle);
                                 }
                             }
                         }
-                    });
+                    }
                     
                     globalTrendData = { labels: trendLabels, values: trendValues, fundA: trendFundA, fundB: trendFundB, pnl: trendPnl };
-                    const rowsArr = XLSX.utils.sheet_to_json(dataSheet, {header: 1});
-                    extractRiskMetrics(rowsArr);
+                    globalStrategyData = { labels: stratLabels, mcap: stratMcap, tech: stratTech, single: stratSingle };
+                    extractRiskMetrics(dataSheetRows);
                 }
 
                 let currentTotalAsset = processDashboard(json);
                 renderHeatmap();
                 updateTrendChart();
-                refreshRiskDOM(macroData.S7 !== null ? macroData.S7 : currentTotalAsset);
+                refreshRiskDOM(macroData.V7 !== null ? macroData.V7 : currentTotalAsset);
                 
                 const slider = document.getElementById('stressSlider');
                 if(slider) { slider.value = 0; document.getElementById('stressValue').innerText = '0%'; document.getElementById('stressValue').className = 'text-sm font-bold w-12 text-right text-slate-800 dark:text-slate-200'; }
@@ -1770,7 +2035,6 @@
             reader.readAsArrayBuffer(file);
         });
 
-        // Clear Cache Dialog Modal Bindings
         const btnClearCache = document.getElementById('btnClearCache');
         const confirmClearModal = document.getElementById('confirmClearCacheModal');
         const btnCloseConfirmClear = document.getElementById('btnCloseConfirmClear');
@@ -1800,9 +2064,7 @@
             let uniqueHoldings = new Set();
             let totalBetaValue = 0; 
             
-            // CLEC 4:3:3 策略池累積器 (1:市值 40%, 2:正二 30%, 0:類現金 30%, 3:排除)
             let clecPool = { cash: 0, marketCap: 0, lev2: 0, excluded: 0 };
-
             window.globalHoldingsList = [];
 
             let hRowIdx = 0;
@@ -1902,7 +2164,7 @@
                         window.globalHoldingsList.push({ name: name, shares: parseNum(r[col.shares]), cost: cost, marketVal: marketVal });
                     }
 
-                    // 累加 CLEC 策略池
+                    // 累加 CLEC 策略池 (標籤 3 自動排除)
                     let rawClecCode = r[col.clec];
                     let clecCode = null;
                     if (rawClecCode !== undefined && rawClecCode !== null && String(rawClecCode).trim() !== '') {
@@ -1960,9 +2222,10 @@
                 }
             }
 
-            const displayTotalAsset = macroData.S7 !== null ? macroData.S7 : totalAsset;
-            const displayTotalCost = macroData.S9 !== null ? macroData.S9 : totalCost;
-            let cagr = macroData.S12 !== null ? macroData.S12 : (displayTotalCost > 0 ? (Math.pow(displayTotalAsset / displayTotalCost, 1 / Math.max(globalInvestYears, 0.1)) - 1) : 0);
+            // V3.0.3 鎖定：V7 總資產, V9 總成本, V12 年化報酬率
+            const displayTotalAsset = macroData.V7 !== null ? macroData.V7 : totalAsset;
+            const displayTotalCost = macroData.V9 !== null ? macroData.V9 : totalCost;
+            let cagr = macroData.V12 !== null ? macroData.V12 : (displayTotalCost > 0 ? (Math.pow(displayTotalAsset / displayTotalCost, 1 / Math.max(globalInvestYears, 0.1)) - 1) : 0);
             
             portfolioSnapshot.beta = displayTotalAsset > 0 ? totalBetaValue / displayTotalAsset : 1.0;
             modelBeta = portfolioSnapshot.beta; 
@@ -1996,6 +2259,7 @@
             portfolioSnapshot.annVol = annVol;
             portfolioSnapshot.sharpe = annVol > 0 ? (cagr - 0.02) / annVol : 0;
 
+            // 量化散布圖 OLS 樣本保護機制
             if (idxReturns.length > 0 && idxReturns.length === portReturns.length) {
                 let lookback = 36;
                 let startIndex = Math.max(0, portReturns.length - lookback);
@@ -2023,47 +2287,63 @@
                     if (x > maxX) maxX = x;
                 }
 
-                let meanX = sumX / n;
-                let meanY = sumY / n;
-                let covXY = (sumXY / n) - (meanX * meanY);
-                let varX = (sumXX / n) - (meanX * meanX);
-                let varY = (sumYY / n) - (meanY * meanY);
-
-                let regBeta = 0, rSquared = 0;
-                if (varX > 0 && n > 1) {
-                    regBeta = covXY / varX;
-                    rSquared = (varY > 0) ? Math.pow(covXY, 2) / (varX * varY) : 0;
-                }
-                
-                let alphaMonthly = meanY - regBeta * meanX;
-                let alphaAnnualized = Math.pow(1 + alphaMonthly, 12) - 1;
-                
-                modelRSquared = rSquared;
-                modelHistoricalBeta = regBeta;
                 modelCurrentIndex = indexHistory[sortedKeys[sortedKeys.length-1]] || 22000;
 
-                const elScatterBeta = document.getElementById('lblScatterBeta'); if(elScatterBeta) elScatterBeta.innerText = regBeta.toFixed(2);
-                const elScatterAlpha = document.getElementById('lblScatterAlpha'); if(elScatterAlpha) elScatterAlpha.innerText = (alphaAnnualized >= 0 ? '+' : '') + (alphaAnnualized * 100).toFixed(2) + '%';
-                const elScatterR2 = document.getElementById('lblScatterR2'); if(elScatterR2) elScatterR2.innerText = (rSquared * 100).toFixed(1) + '%';
-                const elRegressionEq = document.getElementById('lblRegressionEq'); if(elRegressionEq) elRegressionEq.innerText = `Y = ${regBeta.toFixed(2)}X ${alphaAnnualized >= 0 ? '+' : '-'} ${(Math.abs(alphaAnnualized)*100).toFixed(2)}% (年化)`;
+                if (n >= 3) {
+                    let meanX = sumX / n;
+                    let meanY = sumY / n;
+                    let covXY = (sumXY / n) - (meanX * meanY);
+                    let varX = (sumXX / n) - (meanX * meanX);
+                    let varY = (sumYY / n) - (meanY * meanY);
 
-                if (charts.scatter) {
-                    let padX = (maxX - minX) * 0.1;
-                    if (padX === 0) padX = 0.05;
-                    let lineStartX = minX - padX;
-                    let lineEndX = maxX + padX;
+                    let regBeta = 0, rSquared = 0;
+                    if (varX > 0) {
+                        regBeta = covXY / varX;
+                        rSquared = (varY > 0) ? Math.pow(covXY, 2) / (varX * varY) : 0;
+                    }
                     
-                    charts.scatter.data.datasets[0].data = scatterPoints;
-                    charts.scatter.data.datasets[1].data = [
-                        { x: lineStartX, y: regBeta * lineStartX + alphaMonthly },
-                        { x: lineEndX, y: regBeta * lineEndX + alphaMonthly }
-                    ];
-                    charts.scatter.update();
-                }
+                    let alphaMonthly = meanY - regBeta * meanX;
+                    let alphaAnnualized = Math.pow(1 + alphaMonthly, 12) - 1;
+                    
+                    modelRSquared = rSquared;
+                    modelHistoricalBeta = regBeta;
 
+                    const elScatterBeta = document.getElementById('lblScatterBeta'); if(elScatterBeta) elScatterBeta.innerText = regBeta.toFixed(2);
+                    const elScatterAlpha = document.getElementById('lblScatterAlpha'); if(elScatterAlpha) elScatterAlpha.innerText = (alphaAnnualized >= 0 ? '+' : '') + (alphaAnnualized * 100).toFixed(2) + '%';
+                    const elScatterR2 = document.getElementById('lblScatterR2'); if(elScatterR2) elScatterR2.innerText = (rSquared * 100).toFixed(1) + '%';
+                    const elRegressionEq = document.getElementById('lblRegressionEq'); if(elRegressionEq) elRegressionEq.innerText = `Y = ${regBeta.toFixed(2)}X ${alphaAnnualized >= 0 ? '+' : '-'} ${(Math.abs(alphaAnnualized)*100).toFixed(2)}% (年化)`;
+
+                    if (charts.scatter) {
+                        let padX = (maxX - minX) * 0.1;
+                        if (padX === 0 || !isFinite(padX)) padX = 0.05;
+                        let lineStartX = minX - padX;
+                        let lineEndX = maxX + padX;
+                        
+                        charts.scatter.data.datasets[0].data = scatterPoints;
+                        charts.scatter.data.datasets[1].data = [
+                            { x: lineStartX, y: regBeta * lineStartX + alphaMonthly },
+                            { x: lineEndX, y: regBeta * lineEndX + alphaMonthly }
+                        ];
+                        charts.scatter.update();
+                    }
+                } else {
+                    modelRSquared = 0;
+                    modelHistoricalBeta = portfolioSnapshot.beta || 1.0;
+                    const elScatterBeta = document.getElementById('lblScatterBeta'); if(elScatterBeta) elScatterBeta.innerText = `${modelHistoricalBeta.toFixed(2)} (部位)`;
+                    const elScatterAlpha = document.getElementById('lblScatterAlpha'); if(elScatterAlpha) elScatterAlpha.innerText = '--';
+                    const elScatterR2 = document.getElementById('lblScatterR2'); if(elScatterR2) elScatterR2.innerText = '累積中';
+                    const elRegressionEq = document.getElementById('lblRegressionEq'); if(elRegressionEq) elRegressionEq.innerText = `數據積累中（樣本數 ${n}/3）`;
+
+                    if (charts.scatter) {
+                        charts.scatter.data.datasets[0].data = scatterPoints;
+                        charts.scatter.data.datasets[1].data = [];
+                        charts.scatter.update();
+                    }
+                }
             } else {
                 modelRSquared = 0; 
                 modelHistoricalBeta = 1.0;
+                modelCurrentIndex = 22000;
             }
 
             const elHoldingsCount = document.getElementById('valHoldingsCount'); if (elHoldingsCount) elHoldingsCount.innerText = uniqueHoldings.size;
@@ -2071,8 +2351,9 @@
             const elTotalCost = document.getElementById('valTotalCost'); if (elTotalCost) elTotalCost.innerText = fmtNum(displayTotalCost);
             const elTotalDebt = document.getElementById('valTotalDebtMacro'); if (elTotalDebt) elTotalDebt.innerText = fmtNum(globalTotalDebt);
             
-            const accProfit = macroData.S10 !== null ? macroData.S10 : (displayTotalAsset - displayTotalCost);
-            const accRate = macroData.S11 !== null ? macroData.S11 : (displayTotalCost > 0 ? (accProfit / displayTotalCost) : 0);
+            // V3.0.3 鎖定：V10 累積損益, V11 累積報酬率
+            const accProfit = macroData.V10 !== null ? macroData.V10 : (displayTotalAsset - displayTotalCost);
+            const accRate = macroData.V11 !== null ? macroData.V11 : (displayTotalCost > 0 ? (accProfit / displayTotalCost) : 0);
             
             const valAcc = document.getElementById('valAccumulatedProfit'); const rateAcc = document.getElementById('valAccumulatedRate');
             if (valAcc) { valAcc.innerText = (accProfit >= 0 ? '+ ' : '- ') + 'NT$ ' + fmtNum(Math.abs(accProfit)); valAcc.className = `text-2xl font-bold mt-1 mb-3 pulse-text text-slate-800 dark:text-slate-200`; }
@@ -2084,9 +2365,10 @@
             const elBeta = document.getElementById('valBeta'); if(elBeta) elBeta.innerText = portfolioSnapshot.beta.toFixed(2);
             const elPredDrop = document.getElementById('valPredDrop'); if(elPredDrop) elPredDrop.innerText = '-' + (10 * portfolioSnapshot.beta).toFixed(1) + '%';
 
-            const ytdBase = macroData.S13 !== null ? macroData.S13 : globalYtdBase;
-            const ytdProfit = macroData.S14 !== null ? macroData.S14 : (displayTotalAsset - ytdBase);
-            const ytdRate = macroData.S15 !== null ? macroData.S15 : (ytdBase > 0 ? (ytdProfit / ytdBase) : 0);
+            // V3.0.3 鎖定：V13 今年期初資產, V14 今年損益, V15 今年報酬率
+            const ytdBase = macroData.V13 !== null ? macroData.V13 : globalYtdBase;
+            const ytdProfit = macroData.V14 !== null ? macroData.V14 : (displayTotalAsset - ytdBase);
+            const ytdRate = macroData.V15 !== null ? macroData.V15 : (ytdBase > 0 ? (ytdProfit / ytdBase) : 0);
             
             const elYtdProfit = document.getElementById('valYtdProfit'); const elYtdRate = document.getElementById('valYtdRate'); const elYtdBase = document.getElementById('valYtdBase');
             if (elYtdBase) elYtdBase.innerText = fmtNum(ytdBase);
@@ -2129,10 +2411,40 @@
                 charts.topHoldings.data.datasets[0].data = tData; charts.topHoldings.update();
             }
 
+            // 依據「數據」工作表 I (市值型)、J (科技/產業型)、K (個股) 欄產生月度動態直方圖
             if (charts.strategy) {
-                charts.strategy.data.labels = ['市值型', '產業型/主題', '個股 (含美股)'];
-                charts.strategy.data.datasets[0].data = [alloc['股_市值']/10000, alloc['股_產業']/10000, alloc['股_個股']/10000];
-                charts.strategy.data.datasets[0].backgroundColor = ['#818cf8', '#34d399', '#fbbf24'];
+                const sData = globalStrategyData;
+                const hasHistory = sData && sData.labels && sData.labels.length > 0 && 
+                                   (sData.mcap.some(v => v > 0) || sData.tech.some(v => v > 0) || sData.single.some(v => v > 0));
+
+                if (hasHistory) {
+                    // 若前段月份為 0，自第一個有數據月份起繪製，以求版面精確緊湊
+                    let startIdx = sData.labels.findIndex((_, idx) => (sData.mcap[idx] > 0 || sData.tech[idx] > 0 || sData.single[idx] > 0));
+                    if (startIdx === -1) startIdx = 0;
+
+                    const dispLabels = sData.labels.slice(startIdx);
+                    const dispMcap = sData.mcap.slice(startIdx);
+                    const dispTech = sData.tech.slice(startIdx);
+                    const dispSingle = sData.single.slice(startIdx);
+
+                    charts.strategy.data.labels = dispLabels;
+                    charts.strategy.data.datasets = [
+                        { label: '市值型', data: dispMcap, backgroundColor: '#6366f1', borderRadius: 3, stack: typeof isStrategyStacked !== 'undefined' && isStrategyStacked ? 'stock' : undefined },
+                        { label: '科技/產業型', data: dispTech, backgroundColor: '#10b981', borderRadius: 3, stack: typeof isStrategyStacked !== 'undefined' && isStrategyStacked ? 'stock' : undefined },
+                        { label: '個股', data: dispSingle, backgroundColor: '#f59e0b', borderRadius: 3, stack: typeof isStrategyStacked !== 'undefined' && isStrategyStacked ? 'stock' : undefined }
+                    ];
+                    charts.strategy.options.plugins.legend.display = true;
+                } else {
+                    // Fallback 機制：若未讀取到歷史 I, J, K 欄，採用當期持股明細彙總
+                    charts.strategy.data.labels = ['市值型', '科技/產業型', '個股 (含美股)'];
+                    charts.strategy.data.datasets = [{
+                        label: '當期金額',
+                        data: [alloc['股_市值'] / 10000, alloc['股_產業'] / 10000, alloc['股_個股'] / 10000],
+                        backgroundColor: ['#6366f1', '#10b981', '#f59e0b'],
+                        borderRadius: 4
+                    }];
+                    charts.strategy.options.plugins.legend.display = false;
+                }
                 charts.strategy.update();
             }
 
@@ -2178,7 +2490,6 @@
             }
             renderLedgerTable();
 
-            // 執行 CLEC 4:3:3 雷達即時渲染
             try {
                 renderCLECRadar(clecPool);
             } catch (radarErr) {
@@ -2227,7 +2538,7 @@
         function renderHeatmap() {
             const container = document.getElementById('heatmapContainer'); if (!container) return;
             const yrs = Object.keys(heatmapData).sort().reverse();
-            if (yrs.length === 0) { container.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">尚無熱力圖資料，請確認數據頁面 J 欄格式</p>'; return; }
+            if (yrs.length === 0) { container.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">尚無熱力圖資料（自民國 114 年起）</p>'; return; }
             
             let html = `<table class="heatmap-table"><thead><tr><th class="w-16"></th>`;
             for (let m = 1; m <= 12; m++) html += `<th class="heatmap-label">${m}月</th>`;
@@ -2249,15 +2560,32 @@
                     }
                     html += `<td class="heatmap-cell" style="background-color:${bgColor}; color:${color}">${val !== undefined ? (val>0?'+':'') + (val*100).toFixed(1) + '%' : ''}</td>`;
                 }
-                let ytdHtml = '--';
-                if (yr === globalExtractedYr) { ytdHtml = (macroData.S15 > 0 ? '+' : '') + fmtPct(macroData.S15 || 0); } else {
-                    let prevYr = String(parseInt(yr, 10) - 1); let prevDec = assetHistory[prevYr + '12']; let currYrLastVal = null;
-                    for (let m = 12; m >= 1; m--) { let mStr = String(m).padStart(2, '0'); if (assetHistory[yr + mStr] !== undefined) { currYrLastVal = assetHistory[yr + mStr]; break; } }
-                    if (currYrLastVal !== null && prevDec !== undefined && prevDec > 0) { 
-                        const ytdVal = (currYrLastVal - prevDec) / prevDec;
-                        ytdHtml = (ytdVal > 0 ? '+' : '') + fmtPct(ytdVal); 
+
+                // 方案 1B：全面採用「月度純報酬幾何連乘法」計算全年度累積 YTD，並保留 V15 作為備份校驗
+                let validCount = 0;
+                let geomProduct = 1.0;
+                for (let m = 1; m <= 12; m++) {
+                    const mStr = String(m).padStart(2, '0');
+                    const val = heatmapData[yr] ? heatmapData[yr][mStr] : undefined;
+                    if (val !== undefined && val !== null && !isNaN(val)) {
+                        geomProduct *= (1.0 + Number(val));
+                        validCount++;
                     }
                 }
+
+                let ytdVal = null;
+                if (validCount > 0) {
+                    ytdVal = geomProduct - 1.0;
+                } else if (yr === globalExtractedYr && macroData.V15 !== null) {
+                    // Fallback 機制：若當前年度未解析到月度純報酬，則採用 V15 儲存格校驗
+                    ytdVal = macroData.V15;
+                }
+
+                let ytdHtml = '--';
+                if (ytdVal !== null && !isNaN(ytdVal)) {
+                    ytdHtml = (ytdVal > 0 ? '+' : '') + fmtPct(ytdVal);
+                }
+
                 html += `<td class="heatmap-cell bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 font-bold border dark:border-indigo-800">${ytdHtml}</td></tr>`;
             });
             html += `</tbody></table>`; container.innerHTML = html;
@@ -2296,6 +2624,7 @@
             else if (simCash >= 300000) { if (badgeCash) { badgeCash.innerText = '黃燈提醒'; badgeCash.className = 'text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 px-2 py-0.5 rounded inline-block mt-0.5'; } if (iconCash) iconCash.className = 'p-2 bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 rounded-lg'; if (cardCash) cardCash.className = 'glass-card bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800 flex flex-col justify-between'; if (elCashBar) elCashBar.className = 'bg-amber-500 dark:bg-amber-400 h-2.5 rounded-full transition-all duration-500'; if (elCashAmount) elCashAmount.className = 'font-bold text-amber-600 dark:text-amber-400 text-lg'; } 
             else { if (badgeCash) { badgeCash.innerText = '紅燈警戒'; badgeCash.className = 'text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-900/50 px-2 py-0.5 rounded inline-block mt-0.5'; } if (iconCash) iconCash.className = 'p-2 bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 rounded-lg'; if (cardCash) cardCash.className = 'glass-card bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-800 flex flex-col justify-between'; if (elCashBar) elCashBar.className = 'bg-rose-500 dark:bg-rose-400 h-2.5 rounded-full transition-all duration-500'; if (elCashAmount) elCashAmount.className = 'font-bold text-rose-600 dark:text-rose-400 text-lg'; }
 
+            // V3.0.3 鎖定：流動比率鎖定 F63
             const currentRatio = (stressPct === 0 && macroData.F63 !== null) ? macroData.F63 : (globalCurrentLiabilities > 0 ? safeAssets / globalCurrentLiabilities : 0);
             const elCurrentRatio = document.getElementById('valCurrentRatio'); if (elCurrentRatio) elCurrentRatio.innerText = (currentRatio * 100).toFixed(1) + '%';
             const badgeCurrent = document.getElementById('badgeCurrentRatio'); const cardCurrent = document.getElementById('cardCurrentRatio'); const iconCurrent = document.getElementById('iconCurrentRatio');
@@ -2313,7 +2642,8 @@
             if (charts.gaugeDebt) { charts.gaugeDebt.data.datasets[0].data = [Math.min(dRate * 100, 100), Math.max(0, 100 - dRate * 100)]; charts.gaugeDebt.data.datasets[0].backgroundColor = [(dRate >= 0.2 && dRate <= 0.5) ? '#10b981' : (dRate <= 0.65 ? '#f59e0b' : '#f43f5e'), document.documentElement.classList.contains('dark') ? '#1e293b' : '#f1f5f9']; charts.gaugeDebt.update(); }
 
             const levRatio = simTotal > 0 ? (simLevAsset / simTotal) : 0; 
-            const levSafeRatio = (stressPct === 0 && macroData.S17 !== null) ? macroData.S17 : (safeAssets > 0 ? simLevAsset / safeAssets : 0);
+            // V3.0.3 鎖定：槓桿安全比鎖定 V17
+            const levSafeRatio = (stressPct === 0 && macroData.V17 !== null) ? macroData.V17 : (safeAssets > 0 ? simLevAsset / safeAssets : 0);
             
             const elLevRatio = document.getElementById('valLeverageRatio'); if (elLevRatio) elLevRatio.innerText = (levRatio * 100).toFixed(1) + '%';
             const elLevAmt = document.getElementById('valLeverageAmount'); if (elLevAmt) elLevAmt.innerText = (simLevAsset / 10000).toFixed(1) + ' 萬';
@@ -2322,17 +2652,21 @@
             const badgeLev = document.getElementById('badgeLeverageAlert'); const cardLev = document.getElementById('cardLeverageAlert'); const iconLev = document.getElementById('iconLeverageAlert');
             if (levSafeRatio >= 1.0) { if (badgeLev) { badgeLev.innerText = '紅燈警戒'; badgeLev.className = 'text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-900/50 px-2 py-0.5 rounded inline-block mt-0.5'; } if (iconLev) iconLev.className = 'p-2 bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 rounded-lg'; if (cardLev) cardLev.className = 'glass-card bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-800 flex flex-col justify-between'; if (elLevSafe) elLevSafe.className = 'font-bold text-3xl text-rose-600 dark:text-rose-400 transition-colors duration-300'; } 
             else if (levSafeRatio >= 0.5) { if (badgeLev) { badgeLev.innerText = '黃燈提醒'; badgeLev.className = 'text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 px-2 py-0.5 rounded inline-block mt-0.5'; } if (iconLev) iconLev.className = 'p-2 bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 rounded-lg'; if (cardLev) cardLev.className = 'glass-card bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800 flex flex-col justify-between'; if (elLevSafe) elLevSafe.className = 'font-bold text-3xl text-amber-600 dark:text-amber-400 transition-colors duration-300'; } 
-            else { if (badgeLev) { badgeLev.innerText = '綠燈安全'; badgeLev.className = 'text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded inline-block mt-0.5'; } if (iconLev) iconLev.className = 'p-2 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-lg'; if (cardLev) cardLev.className = 'glass-card bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800 flex flex-col justify-between'; if (elLevSafe) elLevSafe.className = 'font-bold text-3xl text-emerald-600 dark:text-emerald-400 transition-colors duration-300'; }
+            else { if (badgeLev) { badgeLev.innerText = '綠燈安全'; badgeLev.className = 'text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded inline-block mt-0.5'; } if (iconLev) iconLev.className = 'p-2 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-lg'; if (cardLev) cardLev.className = 'glass-card bg-emerald-50 dark:bg-emerald-900/10 border border-rose-100 dark:border-rose-800 flex flex-col justify-between'; if (elLevSafe) elLevSafe.className = 'font-bold text-3xl text-emerald-600 dark:text-emerald-400 transition-colors duration-300'; }
             if (charts.gaugeLeverage) { charts.gaugeLeverage.data.datasets[0].data = [Math.min(levSafeRatio * 100, 150), Math.max(0, 150 - levSafeRatio * 100)]; charts.gaugeLeverage.data.datasets[0].backgroundColor = [levSafeRatio < 0.5 ? '#10b981' : (levSafeRatio < 1.0 ? '#f59e0b' : '#f43f5e'), document.documentElement.classList.contains('dark') ? '#1e293b' : '#f1f5f9']; charts.gaugeLeverage.update(); }
         }
 
+        // V3.0.3 鎖定：V8 總負債優先採納
         function extractRiskMetrics(rows) {
-            globalTotalDebt = 0; globalCurrentLiabilities = 0; globalInvestYears = 1;
+            globalTotalDebt = (macroData.V8 !== null && macroData.V8 > 0) ? macroData.V8 : 0;
+            globalCurrentLiabilities = 0;
+            globalInvestYears = 1;
             rows.forEach(row => {
                 if(!row || !row.length) return;
-                let idxDebt = row.findIndex(cell => typeof cell === 'string' && cell.includes('總負債'));
-                if(idxDebt !== -1) { for(let i = idxDebt + 1; i < row.length; i++) { let num = parseNum(row[i]); if(num > 0) { globalTotalDebt = num; break; } } }
-                
+                if (!globalTotalDebt) {
+                    let idxDebt = row.findIndex(cell => typeof cell === 'string' && cell.includes('總負債'));
+                    if(idxDebt !== -1) { for(let i = idxDebt + 1; i < row.length; i++) { let num = parseNum(row[i]); if(num > 0) { globalTotalDebt = num; break; } } }
+                }
                 let idxLiab = row.findIndex(cell => typeof cell === 'string' && cell.includes('流動負債'));
                 if(idxLiab !== -1) { for(let i = idxLiab + 1; i < row.length; i++) { let num = parseNum(row[i]); if(num > 0) { globalCurrentLiabilities = num; break; } } }
 
@@ -2353,38 +2687,100 @@
                 let qPnlSum = 0;
                 for (let i = 0; i < l.length; i++) {
                     const parts = l[i].split('/'); const year = parts[0]; const month = parts[1]; qPnlSum += (p[i] || 0);
-                    if (['03', '06', '09', '12'].includes(month)) { let q = month === '03' ? 'Q1' : month === '06' ? 'Q2' : month === '09' ? 'Q3' : 'Q4'; displayLabels.push(`${year} ${q}`); displayValues.push(v[i]); displayFundA.push(fa[i]); displayFundB.push(fb[i]); displayPnl.push(qPnlSum / 10000); qPnlSum = 0; }
+                    if (['03', '06', '09', '12'].includes(month)) { 
+                        let q = month === '03' ? 'Q1' : month === '06' ? 'Q2' : month === '09' ? 'Q3' : 'Q4'; 
+                        displayLabels.push(`${year} ${q}`); 
+                        displayValues.push(v[i]); 
+                        displayFundA.push(fa[i]); 
+                        displayFundB.push(fb[i]); 
+                        displayPnl.push(qPnlSum / 10000); 
+                        qPnlSum = 0; 
+                    }
                 }
                 const lastMonth = l[l.length - 1].split('/')[1];
-                if (!['03', '06', '09', '12'].includes(lastMonth)) { displayLabels.push(`${l[l.length - 1].split('/')[0]} 至今`); displayValues.push(v[v.length - 1]); displayFundA.push(fa[fa.length - 1]); displayFundB.push(fb[fb.length - 1]); displayPnl.push(qPnlSum / 10000); }
+                if (!['03', '06', '09', '12'].includes(lastMonth)) { 
+                    displayLabels.push(`${l[l.length - 1].split('/')[0]} 至今`); 
+                    displayValues.push(v[v.length - 1]); 
+                    displayFundA.push(fa[fa.length - 1]); 
+                    displayFundB.push(fb[fb.length - 1]); 
+                    displayPnl.push(qPnlSum / 10000); 
+                }
                 charts.trend.data.datasets[1].label = '大盤對照 (基準模擬季增 4.56%)';
             } else if (type === 'yearly') {
                 let yMap = {}; 
-                l.forEach((lbl, i) => { let y = lbl.split('/')[0]; if(!yMap[y]) yMap[y] = { lbl: y + '年', val: 0, fA: null, fB: null, pSum: 0 }; yMap[y].val = v[i]; yMap[y].fA = fa[i]; yMap[y].fB = fb[i]; yMap[y].pSum += (p[i] || 0); });
-                displayLabels = Object.values(yMap).map(i => i.lbl); displayValues = Object.values(yMap).map(i => i.val); displayFundA = Object.values(yMap).map(i => i.fA); displayFundB = Object.values(yMap).map(i => i.fB); displayPnl = Object.values(yMap).map(i => i.pSum / 10000);
+                l.forEach((lbl, i) => { 
+                    let y = lbl.split('/')[0]; 
+                    if(!yMap[y]) yMap[y] = { lbl: y + '年', val: 0, fA: null, fB: null, pSum: 0 }; 
+                    yMap[y].val = v[i]; 
+                    yMap[y].fA = fa[i]; 
+                    yMap[y].fB = fb[i]; 
+                    yMap[y].pSum += (p[i] || 0); 
+                });
+                displayLabels = Object.values(yMap).map(i => i.lbl); 
+                displayValues = Object.values(yMap).map(i => i.val); 
+                displayFundA = Object.values(yMap).map(i => i.fA); 
+                displayFundB = Object.values(yMap).map(i => i.fB); 
+                displayPnl = Object.values(yMap).map(i => i.pSum / 10000);
                 charts.trend.data.datasets[1].label = '大盤對照 (基準模擬年增 19.56%)';
             } else if (type === 'ytd') {
                 const currentTwYear = String(new Date().getFullYear() - 1911);
-                for(let i = 0; i < l.length; i++) { if(l[i].startsWith(currentTwYear + '/')) { displayLabels.push(l[i]); displayValues.push(v[i]); displayFundA.push(fa[i]); displayFundB.push(fb[i]); displayPnl.push((p[i] || 0) / 10000); } }
+                for(let i = 0; i < l.length; i++) { 
+                    if(l[i].startsWith(currentTwYear + '/')) { 
+                        displayLabels.push(l[i]); 
+                        displayValues.push(v[i]); 
+                        displayFundA.push(fa[i]); 
+                        displayFundB.push(fb[i]); 
+                        displayPnl.push((p[i] || 0) / 10000); 
+                    } 
+                }
                 charts.trend.data.datasets[1].label = '大盤對照 (基準模擬月增 1.5%)';
             } else {
                 displayLabels = [...l]; displayValues = [...v]; displayFundA = [...fa]; displayFundB = [...fb]; displayPnl = p.map(val => (val || 0) / 10000);
                 charts.trend.data.datasets[1].label = '大盤對照 (基準模擬月增 1.5%)';
             }
 
-            charts.trend.data.labels = displayLabels; charts.trend.data.datasets[0].data = displayValues; 
+            charts.trend.data.labels = displayLabels; 
+            charts.trend.data.datasets[0].data = displayValues; 
+            
             if (displayValues.length > 0) {
-                const baseVal = displayValues[0]; const rate = type === 'yearly' ? Math.pow(1.015, 12) : (type === 'quarterly' ? Math.pow(1.015, 3) : 1.015);
-                const benchmark = displayValues.map((_, idx) => baseVal * Math.pow(rate, idx)); charts.trend.data.datasets[1].data = benchmark;
-                let firstIdxA = displayFundA.findIndex(val => val !== null && val > 0); let firstIdxB = displayFundB.findIndex(val => val !== null && val > 0);
-                let normalizedFundA = displayFundA.map((val, idx) => { if (val === null || firstIdxA === -1) return null; let alignBase = displayValues[firstIdxA]; return val * (alignBase / displayFundA[firstIdxA]); });
-                let normalizedFundB = displayFundB.map((val, idx) => { if (val === null || firstIdxB === -1) return null; let alignBase = displayValues[firstIdxB]; return val * (alignBase / displayFundB[firstIdxB]); });
-                charts.trend.data.datasets[2].data = normalizedFundA; charts.trend.data.datasets[3].data = normalizedFundB;
+                // 方案 2A：歸一化的起點數值為「當期全部買入該標的的總額度」，以全局第一個時間點為準
+                const baseVal = displayValues[0]; 
+                const rate = type === 'yearly' ? Math.pow(1.015, 12) : (type === 'quarterly' ? Math.pow(1.015, 3) : 1.015);
+                const benchmark = displayValues.map((_, idx) => baseVal * Math.pow(rate, idx)); 
+                charts.trend.data.datasets[1].data = benchmark;
+                
+                // 全局第一個有效時間點之淨值
+                let baseFundA = (displayFundA.length > 0 && displayFundA[0] !== null && displayFundA[0] > 0) ? displayFundA[0] : (displayFundA.find(x => x !== null && x > 0) || null);
+                let baseFundB = (displayFundB.length > 0 && displayFundB[0] !== null && displayFundB[0] > 0) ? displayFundB[0] : (displayFundB.find(x => x !== null && x > 0) || null);
+
+                // 換算等效總資產；遇缺值則填入 null，配合 spanGaps: false 實現自然斷線
+                let normalizedFundA = displayFundA.map(val => {
+                    if (val === null || val === undefined || !baseFundA) return null;
+                    return baseVal * (val / baseFundA);
+                });
+
+                let normalizedFundB = displayFundB.map(val => {
+                    if (val === null || val === undefined || !baseFundB) return null;
+                    return baseVal * (val / baseFundB);
+                });
+
+                // 將原始收盤淨值與起始淨值儲存於 dataset 物件，供 Tooltip 提取高精準度資訊
+                charts.trend.data.datasets[2].rawNav = displayFundA;
+                charts.trend.data.datasets[2].baseNav = baseFundA;
+                charts.trend.data.datasets[2].data = normalizedFundA;
+
+                charts.trend.data.datasets[3].rawNav = displayFundB;
+                charts.trend.data.datasets[3].baseNav = baseFundB;
+                charts.trend.data.datasets[3].data = normalizedFundB;
             } else {
-                charts.trend.data.datasets[1].data = []; charts.trend.data.datasets[2].data = []; charts.trend.data.datasets[3].data = [];
+                charts.trend.data.datasets[1].data = []; 
+                charts.trend.data.datasets[2].data = []; 
+                charts.trend.data.datasets[3].data = [];
             }
             charts.trend.update();
-            charts.pnl.data.labels = displayLabels; charts.pnl.data.datasets[0].data = displayPnl; charts.pnl.update();
+            charts.pnl.data.labels = displayLabels; 
+            charts.pnl.data.datasets[0].data = displayPnl; 
+            charts.pnl.update();
         };
 
         async function exportDashboardPdf() {
@@ -2398,12 +2794,12 @@
 
                 const isDark = document.documentElement.classList.contains('dark');
                 const pdfHeader = document.createElement('div'); pdfHeader.id = 'temp-pdf-header';
-                pdfHeader.innerHTML = `<div style="text-align: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid ${isDark ? '#334155' : '#e2e8f0'}; page-break-inside: avoid; break-inside: avoid;"><h1 style="font-size: 26px; font-weight: bold; color: ${isDark ? '#f1f5f9' : '#1e293b'}; margin: 0;">個人財務績效報告</h1><p style="font-size: 13px; color: ${isDark ? '#94a3b8' : '#64748b'}; margin-top: 6px;">CFA 理財小幫手 | 匯出時間：${new Date().toLocaleString('zh-TW')} | 報告版本：V2.9.8 旗艦版</p></div>`;
+                pdfHeader.innerHTML = `<div style="text-align: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid ${isDark ? '#334155' : '#e2e8f0'}; page-break-inside: avoid; break-inside: avoid;"><h1 style="font-size: 26px; font-weight: bold; color: ${isDark ? '#f1f5f9' : '#1e293b'}; margin: 0;">個人財務績效報告</h1><p style="font-size: 13px; color: ${isDark ? '#94a3b8' : '#64748b'}; margin-top: 6px;">CFA 理財小幫手 | 匯出時間：${new Date().toLocaleString('zh-TW')} | 報告版本：V3.0.3 旗艦版</p></div>`;
                 content.insertBefore(pdfHeader, content.firstChild);
 
                 await new Promise(resolve => setTimeout(resolve, 300));
                 const updateDateText = (document.getElementById('valUpdateDate')?.innerText || '最新').replace(/[\/:*?"<>|]/g, '');
-                const filename = `財務績效報告_V2.9.8_${updateDateText}.pdf`;
+                const filename = `財務績效報告_V3.0.3_${updateDateText}.pdf`;
 
                 const opt = { margin: [10, 10, 15, 10], filename: filename, image: { type: 'jpeg', quality: 1.0 }, html2canvas: { scale: 2, useCORS: true, scrollY: 0, backgroundColor: isDark ? '#020617' : '#f8fafc' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['.glass-card', '#temp-pdf-header'] } };
                 await html2pdf().set(opt).from(content).toPdf().get('pdf').then(function (pdf) {
@@ -2447,7 +2843,6 @@
             }); 
         }
 
-        // Custom FIRE Target Prompt Modal
         const btnEditFireTarget = document.getElementById('btnEditFireTarget');
         const fireTargetModal = document.getElementById('fireTargetModal');
         const btnCloseFireModal = document.getElementById('btnCloseFireModal');
@@ -2487,7 +2882,7 @@
             const currentRatio = macroData.F63 !== null ? macroData.F63 : (globalCurrentLiabilities > 0 ? (portfolioSnapshot.cash + portfolioSnapshot.bond) / globalCurrentLiabilities : 0);
             const debtRatio = portfolioSnapshot.totalAsset > 0 ? globalTotalDebt / portfolioSnapshot.totalAsset : 0;
             const displayLevAmt = portfolioSnapshot.leverageAsset;
-            const levSafeRatio = macroData.S17 !== null ? macroData.S17 : ((portfolioSnapshot.cash + portfolioSnapshot.bond) > 0 ? displayLevAmt / (portfolioSnapshot.cash + portfolioSnapshot.bond) : 0);
+            const levSafeRatio = macroData.V17 !== null ? macroData.V17 : ((portfolioSnapshot.cash + portfolioSnapshot.bond) > 0 ? displayLevAmt / (portfolioSnapshot.cash + portfolioSnapshot.bond) : 0);
             
             const promptText = `你現在是一位擁有 20 年資歷的頂尖特許金融分析師（CFA）。\n請根據以下使用者的最新財務數據，給出一份專業、簡明且客觀的「財務體質診斷報告」。\n【使用者當前財務數據】\n- 總資產：${fmtNum(portfolioSnapshot.totalAsset)} 元\n- 總負債：${fmtNum(globalTotalDebt)} 元\n- 股票資產：${fmtNum(portfolioSnapshot.stock)} 元\n- 債券資產：${fmtNum(portfolioSnapshot.bond)} 元\n- 現金儲備：${fmtNum(portfolioSnapshot.cash)} 元\n- 黃金資產：${fmtNum(portfolioSnapshot.gold)} 元\n- 槓桿(正2)資產：${fmtNum(displayLevAmt)} 元\n- 年化報酬率(CAGR/XIRR)：${fmtPct(portfolioSnapshot.cagr)}\n- 短期流動比率(現金+債券/流動負債)：${fmtPct(currentRatio)} (健康標準>300%)\n- 負債比率：${fmtPct(debtRatio)} (健康標準20%~50%)\n- 槓桿曝險佔比(正2資產/類現金)：${fmtPct(levSafeRatio)} (健康標準<100%)\n- 前幾大持股佔比：${portfolioSnapshot.topHoldingsNames.join(', ')}\n【輸出要求】\n1. 請以「理財小幫手」的口吻（專業、具同理心）給予評價。\n2. 結構必須包含：🌟 總體評價、⚠️ 風險提示、💡 具體建議。\n3. 內容請使用繁體中文（台灣習慣用語），不需要輸出Markdown的程式碼區塊符號。`;
             try {
