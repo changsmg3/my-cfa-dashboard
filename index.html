@@ -1388,11 +1388,7 @@
                 type: 'bar',
                 data: {
                     labels: [],
-                    datasets: [
-                        { label: '市值型', data: [], backgroundColor: '#6366f1', borderRadius: 3, stack: 'stock' },
-                        { label: '科技/產業型', data: [], backgroundColor: '#10b981', borderRadius: 3, stack: 'stock' },
-                        { label: '個股', data: [], backgroundColor: '#f59e0b', borderRadius: 3, stack: 'stock' }
-                    ]
+                    datasets: []
                 },
                 options: {
                     maintainAspectRatio: false,
@@ -1402,17 +1398,23 @@
                             display: true,
                             position: 'top',
                             align: 'end',
-                            labels: { boxWidth: 10, usePointStyle: true, pointStyle: 'circle', font: { size: 10, weight: 'bold' } }
+                            labels: { boxWidth: 10, usePointStyle: true, font: { size: 10, weight: 'bold' } }
                         },
                         tooltip: {
                             callbacks: {
                                 label: function(c) {
                                     let v = c.raw || 0;
+                                    if (c.dataset.label === '線性趨勢線') {
+                                        return `${c.dataset.label}: 約 NT$ ${v.toFixed(1)} 萬`;
+                                    }
                                     return `${c.dataset.label}: NT$ ${new Intl.NumberFormat('zh-TW', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v)} 萬`;
                                 },
                                 footer: function(items) {
-                                    let sum = items.reduce((acc, curr) => acc + (curr.raw || 0), 0);
-                                    return `股票市值合計: NT$ ${new Intl.NumberFormat('zh-TW', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(sum)} 萬`;
+                                    const totalItem = items.find(i => i.dataset.label === '股票合計走勢');
+                                    if (totalItem) {
+                                        return `當月股票總市值: NT$ ${new Intl.NumberFormat('zh-TW', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(totalItem.raw || 0)} 萬`;
+                                    }
+                                    return '';
                                 }
                             }
                         }
@@ -1446,7 +1448,9 @@
                         charts.strategy.options.scales.x.stacked = isStrategyStacked;
                         charts.strategy.options.scales.y.stacked = isStrategyStacked;
                         charts.strategy.data.datasets.forEach(ds => {
-                            ds.stack = isStrategyStacked ? 'stock' : undefined;
+                            if (ds.type === 'bar') {
+                                ds.stack = isStrategyStacked ? 'stock' : undefined;
+                            }
                         });
                         charts.strategy.update();
                     }
@@ -2411,7 +2415,7 @@
                 charts.topHoldings.data.datasets[0].data = tData; charts.topHoldings.update();
             }
 
-            // 依據「數據」工作表 I (市值型)、J (科技/產業型)、K (個股) 欄產生月度動態直方圖
+            // 依據「數據」工作表 I (市值型)、J (科技/產業型)、K (個股) 欄產生月度動態直方圖 + 趨勢線
             if (charts.strategy) {
                 const sData = globalStrategyData;
                 const hasHistory = sData && sData.labels && sData.labels.length > 0 && 
@@ -2427,17 +2431,84 @@
                     const dispTech = sData.tech.slice(startIdx);
                     const dispSingle = sData.single.slice(startIdx);
 
+                    // 1. 計算每月股票合計總額 (萬)
+                    const dispTotal = dispLabels.map((_, i) => (dispMcap[i] || 0) + (dispTech[i] || 0) + (dispSingle[i] || 0));
+
+                    // 2. 最小平方法 (OLS) 計算長期線性趨勢線
+                    let n = dispTotal.length;
+                    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+                    for (let i = 0; i < n; i++) {
+                        sumX += i;
+                        sumY += dispTotal[i];
+                        sumXY += i * dispTotal[i];
+                        sumXX += i * i;
+                    }
+                    let slope = n > 1 ? (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX) : 0;
+                    let intercept = n > 1 ? (sumY - slope * sumX) / n : (dispTotal[0] || 0);
+                    const dispOls = dispLabels.map((_, i) => slope * i + intercept);
+
                     charts.strategy.data.labels = dispLabels;
                     charts.strategy.data.datasets = [
-                        { label: '市值型', data: dispMcap, backgroundColor: '#6366f1', borderRadius: 3, stack: typeof isStrategyStacked !== 'undefined' && isStrategyStacked ? 'stock' : undefined },
-                        { label: '科技/產業型', data: dispTech, backgroundColor: '#10b981', borderRadius: 3, stack: typeof isStrategyStacked !== 'undefined' && isStrategyStacked ? 'stock' : undefined },
-                        { label: '個股', data: dispSingle, backgroundColor: '#f59e0b', borderRadius: 3, stack: typeof isStrategyStacked !== 'undefined' && isStrategyStacked ? 'stock' : undefined }
+                        {
+                            type: 'line',
+                            label: '股票合計走勢',
+                            data: dispTotal,
+                            borderColor: '#f43f5e',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2.5,
+                            pointBackgroundColor: '#f43f5e',
+                            pointRadius: 3,
+                            pointHoverRadius: 6,
+                            tension: 0.3,
+                            order: 1
+                        },
+                        {
+                            type: 'line',
+                            label: '線性趨勢線',
+                            data: dispOls,
+                            borderColor: '#94a3b8',
+                            backgroundColor: 'transparent',
+                            borderWidth: 1.5,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            fill: false,
+                            order: 2
+                        },
+                        {
+                            type: 'bar',
+                            label: '市值型',
+                            data: dispMcap,
+                            backgroundColor: '#6366f1',
+                            borderRadius: 3,
+                            stack: typeof isStrategyStacked !== 'undefined' && isStrategyStacked ? 'stock' : undefined,
+                            order: 3
+                        },
+                        {
+                            type: 'bar',
+                            label: '科技/產業型',
+                            data: dispTech,
+                            backgroundColor: '#10b981',
+                            borderRadius: 3,
+                            stack: typeof isStrategyStacked !== 'undefined' && isStrategyStacked ? 'stock' : undefined,
+                            order: 3
+                        },
+                        {
+                            type: 'bar',
+                            label: '個股',
+                            data: dispSingle,
+                            backgroundColor: '#f59e0b',
+                            borderRadius: 3,
+                            stack: typeof isStrategyStacked !== 'undefined' && isStrategyStacked ? 'stock' : undefined,
+                            order: 3
+                        }
                     ];
                     charts.strategy.options.plugins.legend.display = true;
                 } else {
                     // Fallback 機制：若未讀取到歷史 I, J, K 欄，採用當期持股明細彙總
                     charts.strategy.data.labels = ['市值型', '科技/產業型', '個股 (含美股)'];
                     charts.strategy.data.datasets = [{
+                        type: 'bar',
                         label: '當期金額',
                         data: [alloc['股_市值'] / 10000, alloc['股_產業'] / 10000, alloc['股_個股'] / 10000],
                         backgroundColor: ['#6366f1', '#10b981', '#f59e0b'],
